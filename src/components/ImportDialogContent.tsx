@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Import, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,7 +20,7 @@ const ImportDialogContent: React.FC<ImportDialogContentProps> = ({
   onClose,
   isImporting,
 }) => {
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
         <div className="p-6">
@@ -91,7 +92,8 @@ cheese
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
