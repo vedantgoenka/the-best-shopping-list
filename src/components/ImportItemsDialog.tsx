@@ -8,13 +8,11 @@ import { ShoppingItem } from '@/types/shoppingItem';
 
 interface ImportItemsDialogProps {
   onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder?: boolean, specificOrderIndex?: number) => Promise<boolean>;
-  onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
   items: ShoppingItem[];
 }
 
 const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
   onAddItem,
-  onUpdateItem,
   items,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,16 +20,14 @@ const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
   
   const { isImporting, importItems } = useImportItems({
     onAddItem,
-    onUpdateItem,
     items,
   });
 
-  const handleImport = async () => {
-    const success = await importItems(importText);
-    if (success) {
-      setImportText('');
-      setIsOpen(false);
-    }
+  const handleImport = () => {
+    importItems(importText);
+    // The dialog now closes immediately, and the import runs in the background.
+    setImportText('');
+    setIsOpen(false);
   };
 
   return (
