@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { ShoppingBag, Filter, ArrowUpDown, Grid3X3, Store } from 'lucide-react';
+import { ShoppingBag, Filter, ArrowUpDown, Grid3X3, Store, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +28,7 @@ const ShoppingList = () => {
   const [groupBy, setGroupBy] = useState<'category' | 'shop'>(() => {
     return (localStorage.getItem('shoppingListGroupBy') as 'category' | 'shop') || 'category';
   });
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -98,7 +101,12 @@ const ShoppingList = () => {
 
     return sortedGroups.map(groupKey => ({
       name: groupKey,
-      items: groups[groupKey]
+      items: groups[groupKey],
+      completedCount: groups[groupKey].filter(item => item.completed).length,
+      totalCount: groups[groupKey].length,
+      progressPercentage: groups[groupKey].length > 0 
+        ? (groups[groupKey].filter(item => item.completed).length / groups[groupKey].length) * 100 
+        : 0
     }));
   }, [sortedItems, groupBy]);
 
@@ -126,6 +134,18 @@ const ShoppingList = () => {
 
   const handleToggleChange = (checked: boolean) => {
     handleGroupChange(checked ? 'shop' : 'category');
+  };
+
+  const toggleGroupCollapse = (groupName: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupName)) {
+        newSet.delete(groupName);
+      } else {
+        newSet.add(groupName);
+      }
+      return newSet;
+    });
   };
 
   if (loading) {
@@ -250,38 +270,60 @@ const ShoppingList = () => {
               ) : (
                 <div className="space-y-8">
                   {groupedItems.map(group => (
-                    <div key={group.name} className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-xl font-bold text-gray-800">
-                            {group.name}
-                          </h3>
-                          <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">
-                            {group.items.length}
-                          </span>
-                        </div>
-                        {groupBy === 'category' && group.name !== 'No Category' && (
-                          <CategoryDeleteDialog
-                            categoryName={group.name}
-                            itemCount={group.items.length}
-                            onConfirmDelete={handleDeleteCategory}
-                          />
-                        )}
-                      </div>
-                      <DragDropList items={group.items} onReorder={handleReorder}>
-                        <div className="space-y-3">
-                          {group.items.map(item => (
-                            <SortableShoppingItem
-                              key={item.id}
-                              item={item}
-                              onUpdate={updateItem}
-                              onDelete={deleteItem}
-                              items={items}
+                    <Collapsible 
+                      key={group.name} 
+                      open={!collapsedGroups.has(group.name)}
+                      onOpenChange={() => toggleGroupCollapse(group.name)}
+                    >
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <CollapsibleTrigger className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
+                            <ChevronDown 
+                              className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                                collapsedGroups.has(group.name) ? '-rotate-90' : ''
+                              }`} 
                             />
-                          ))}
+                            <h3 className="text-xl font-bold text-gray-800">
+                              {group.name}
+                            </h3>
+                            <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">
+                              {group.items.length}
+                            </span>
+                            <div className="flex items-center gap-2 ml-2">
+                              <Progress 
+                                value={group.progressPercentage} 
+                                className="w-20 h-2"
+                              />
+                              <span className="text-xs text-gray-500 min-w-[3rem]">
+                                {group.completedCount}/{group.totalCount}
+                              </span>
+                            </div>
+                          </CollapsibleTrigger>
+                          {groupBy === 'category' && group.name !== 'No Category' && (
+                            <CategoryDeleteDialog
+                              categoryName={group.name}
+                              itemCount={group.items.length}
+                              onConfirmDelete={handleDeleteCategory}
+                            />
+                          )}
                         </div>
-                      </DragDropList>
-                    </div>
+                        <CollapsibleContent>
+                          <DragDropList items={group.items} onReorder={handleReorder}>
+                            <div className="space-y-3">
+                              {group.items.map(item => (
+                                <SortableShoppingItem
+                                  key={item.id}
+                                  item={item}
+                                  onUpdate={updateItem}
+                                  onDelete={deleteItem}
+                                  items={items}
+                                />
+                              ))}
+                            </div>
+                          </DragDropList>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
                   ))}
                 </div>
               )}
