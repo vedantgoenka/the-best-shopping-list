@@ -1,235 +1,66 @@
-import React, { useState, useMemo } from 'react';
+
+import React from 'react';
 import { ShoppingBag } from 'lucide-react';
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { useShoppingItems } from '@/hooks/useShoppingItems';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import { useShoppingListState } from '@/hooks/useShoppingListState';
+import { useShoppingListFilters } from '@/hooks/useShoppingListFilters';
 import SearchAndAddItem from './SearchAndAddItem';
-import SortableShoppingItem from './SortableShoppingItem';
 import Header from './Header';
 import ProgressBanner from './ProgressBanner';
 import FilterControls from './FilterControls';
 import SortControls from './SortControls';
-import GroupHeader from './GroupHeader';
-import EmptyState from './EmptyState';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import ShoppingListContent from './ShoppingListContent';
 
 const ShoppingList = () => {
   const { items, loading, addItem, updateItem, deleteItem, deleteCategoryWithItems, reorderItems } = useShoppingItems();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'category' | 'shop' | 'created' | 'completed'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [groupBy, setGroupBy] = useState<'category' | 'shop'>(() => {
-    return (localStorage.getItem('shoppingListGroupBy') as 'category' | 'shop') || 'category';
+  
+  const {
+    searchTerm,
+    setSearchTerm,
+    showCompleted,
+    setShowCompleted,
+    sortBy,
+    sortOrder,
+    groupBy,
+    collapsedGroups,
+    handleGroupChange,
+    handleSortChange,
+    toggleGroupCollapse,
+  } = useShoppingListState();
+
+  const { filteredItems, sortedItems, groupedItems } = useShoppingListFilters({
+    items,
+    searchTerm,
+    showCompleted,
+    sortBy,
+    sortOrder,
+    groupBy,
+    isManuallyReordering: false, // Will be updated by drag and drop hook
   });
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const [isManuallyReordering, setIsManuallyReordering] = useState(false);
 
-  // Drag and drop sensors with better configuration
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const { sensors, isManuallyReordering, handleDragEnd, resetManualReordering } = useDragAndDrop({
+    sortedItems,
+    reorderItems,
+  });
 
-  const filteredItems = useMemo(() => {
-    return items.filter(item => {
-      const matchesSearch = item.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                          (item.shop_name && item.shop_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                          (item.notes && item.notes.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesCompleted = showCompleted || !item.completed;
-      return matchesSearch && matchesCompleted;
-    });
-  }, [items, searchTerm, showCompleted]);
-
-  const sortedItems = useMemo(() => {
-    // If we're manually reordering, don't apply automatic sorting
-    if (isManuallyReordering) {
-      return filteredItems;
-    }
-
-    const sorted = [...filteredItems].sort((a, b) => {
-      let compareValue = 0;
-      
-      switch (sortBy) {
-        case 'name':
-          compareValue = a.text.localeCompare(b.text);
-          break;
-        case 'category':
-          compareValue = (a.category || '').localeCompare(b.category || '');
-          break;
-        case 'shop':
-          compareValue = (a.shop_name || '').localeCompare(b.shop_name || '');
-          break;
-        case 'created':
-          compareValue = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-          break;
-        case 'completed':
-          compareValue = Number(a.completed) - Number(b.completed);
-          break;
-        default:
-          compareValue = 0;
-      }
-      
-      return sortOrder === 'asc' ? compareValue : -compareValue;
-    });
-    
-    return sorted;
-  }, [filteredItems, sortBy, sortOrder, isManuallyReordering]);
-
-  const allItemsProgressData = useMemo(() => {
-    const groups: { [key: string]: { items: typeof items, completedCount: number, totalCount: number, progressPercentage: number } } = {};
-    
-    items.forEach(item => {
-      let groupKey: string;
-      
-      if (groupBy === 'category') {
-        groupKey = item.category || 'No Category';
-      } else {
-        groupKey = item.shop_name || 'No Shop';
-      }
-      
-      if (!groups[groupKey]) {
-        groups[groupKey] = {
-          items: [],
-          completedCount: 0,
-          totalCount: 0,
-          progressPercentage: 0
-        };
-      }
-      
-      groups[groupKey].items.push(item);
-      groups[groupKey].totalCount++;
-      if (item.completed) {
-        groups[groupKey].completedCount++;
-      }
-    });
-
-    Object.keys(groups).forEach(groupKey => {
-      const group = groups[groupKey];
-      group.progressPercentage = group.totalCount > 0 
-        ? (group.completedCount / group.totalCount) * 100 
-        : 0;
-    });
-
-    return groups;
-  }, [items, groupBy]);
-
-  const groupedItems = useMemo(() => {
-    const groups: { [key: string]: typeof items } = {};
-    
-    sortedItems.forEach(item => {
-      let groupKey: string;
-      
-      if (groupBy === 'category') {
-        groupKey = item.category || 'No Category';
-      } else {
-        groupKey = item.shop_name || 'No Shop';
-      }
-      
-      if (!groups[groupKey]) {
-        groups[groupKey] = [];
-      }
-      groups[groupKey].push(item);
-    });
-
-    const sortedGroups = Object.keys(groups).sort((a, b) => {
-      const noGroupA = a.startsWith('No ');
-      const noGroupB = b.startsWith('No ');
-      
-      if (noGroupA && !noGroupB) return 1;
-      if (!noGroupA && noGroupB) return -1;
-      return a.localeCompare(b);
-    });
-
-    return sortedGroups.map(groupKey => {
-      const progressData = allItemsProgressData[groupKey] || { completedCount: 0, totalCount: 0, progressPercentage: 0 };
-      
-      return {
-        name: groupKey,
-        items: groups[groupKey],
-        completedCount: progressData.completedCount,
-        totalCount: progressData.totalCount,
-        progressPercentage: progressData.progressPercentage
-      };
-    });
-  }, [sortedItems, groupBy, allItemsProgressData]);
-
-  const handleGroupChange = (newGroupBy: 'category' | 'shop') => {
-    setGroupBy(newGroupBy);
-    localStorage.setItem('shoppingListGroupBy', newGroupBy);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    console.log('Drag end:', { active: active.id, over: over?.id });
-
-    if (over && active.id !== over.id) {
-      // Set manual reordering flag to prevent automatic sorting
-      setIsManuallyReordering(true);
-      
-      // Find the global indices in the sortedItems array
-      const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
-      const newIndex = sortedItems.findIndex((item) => item.id === over.id);
-      
-      console.log('Reordering:', { oldIndex, newIndex });
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const reorderedItems = arrayMove(sortedItems, oldIndex, newIndex);
-        await reorderItems(reorderedItems);
-        
-        // Don't reset the flag automatically - let it stay until user changes sort
-        console.log('Reorder completed, keeping manual mode active');
-      }
-    }
-  };
+  // Update filtered items with manual reordering state
+  const { filteredItems: finalFilteredItems, sortedItems: finalSortedItems, groupedItems: finalGroupedItems } = useShoppingListFilters({
+    items,
+    searchTerm,
+    showCompleted,
+    sortBy,
+    sortOrder,
+    groupBy,
+    isManuallyReordering,
+  });
 
   const handleDeleteCategory = async (categoryName: string) => {
     await deleteCategoryWithItems(categoryName);
   };
 
-  const handleSortChange = (newSortBy: typeof sortBy) => {
-    // Reset manual reordering when user changes sort
-    setIsManuallyReordering(false);
-    
-    if (newSortBy === sortBy) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(newSortBy);
-      setSortOrder('asc');
-    }
-  };
-
-  const toggleGroupCollapse = (groupName: string) => {
-    setCollapsedGroups(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(groupName)) {
-        newSet.delete(groupName);
-      } else {
-        newSet.add(groupName);
-      }
-      return newSet;
-    });
+  const handleSortChangeWithReset = (newSortBy: typeof sortBy) => {
+    handleSortChange(newSortBy, resetManualReordering);
   };
 
   if (loading) {
@@ -274,62 +105,28 @@ const ShoppingList = () => {
                 <SortControls
                   sortBy={sortBy}
                   sortOrder={sortOrder}
-                  onSortChange={handleSortChange}
+                  onSortChange={handleSortChangeWithReset}
                 />
               </div>
             </div>
 
             <div className="p-2 sm:p-6">
-              {filteredItems.length === 0 ? (
-                <EmptyState
-                  searchTerm={searchTerm}
-                  onClearSearch={() => setSearchTerm('')}
-                />
-              ) : (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext items={sortedItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-3 sm:space-y-8">
-                      {groupedItems.map(group => (
-                        <Collapsible 
-                          key={group.name} 
-                          open={!collapsedGroups.has(group.name)}
-                          onOpenChange={() => toggleGroupCollapse(group.name)}
-                        >
-                          <div className="space-y-2 sm:space-y-4">
-                            <GroupHeader
-                              groupName={group.name}
-                              itemCount={group.items.length}
-                              completedCount={group.completedCount}
-                              totalCount={group.totalCount}
-                              progressPercentage={group.progressPercentage}
-                              isCollapsed={collapsedGroups.has(group.name)}
-                              groupBy={groupBy}
-                              onDeleteCategory={handleDeleteCategory}
-                            />
-                            <CollapsibleContent>
-                              <div className="space-y-1 sm:space-y-3">
-                                {group.items.map(item => (
-                                  <SortableShoppingItem
-                                    key={item.id}
-                                    item={item}
-                                    onUpdate={updateItem}
-                                    onDelete={deleteItem}
-                                    items={items}
-                                  />
-                                ))}
-                              </div>
-                            </CollapsibleContent>
-                          </div>
-                        </Collapsible>
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              )}
+              <ShoppingListContent
+                filteredItems={finalFilteredItems}
+                sortedItems={finalSortedItems}
+                groupedItems={finalGroupedItems}
+                searchTerm={searchTerm}
+                groupBy={groupBy}
+                collapsedGroups={collapsedGroups}
+                sensors={sensors}
+                handleDragEnd={handleDragEnd}
+                updateItem={updateItem}
+                deleteItem={deleteItem}
+                handleDeleteCategory={handleDeleteCategory}
+                toggleGroupCollapse={toggleGroupCollapse}
+                onClearSearch={() => setSearchTerm('')}
+                items={items}
+              />
             </div>
           </div>
         </div>
