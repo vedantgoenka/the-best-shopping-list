@@ -1,7 +1,13 @@
 
 import React, { useState, useMemo } from 'react';
-import { ShoppingBag, Filter } from 'lucide-react';
+import { ShoppingBag, Filter, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useShoppingItems } from '@/hooks/useShoppingItems';
 import SearchAndAddItem from './SearchAndAddItem';
 import GroupingToggle from './GroupingToggle';
@@ -16,6 +22,8 @@ const ShoppingList = () => {
   const { items, loading, addItem, updateItem, deleteItem, deleteCategoryWithItems, reorderItems } = useShoppingItems();
   const [searchTerm, setSearchTerm] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'category' | 'shop' | 'created' | 'completed'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [groupBy, setGroupBy] = useState<'category' | 'shop'>(() => {
     return (localStorage.getItem('shoppingListGroupBy') as 'category' | 'shop') || 'category';
   });
@@ -31,10 +39,40 @@ const ShoppingList = () => {
     });
   }, [items, searchTerm, showCompleted]);
 
+  const sortedItems = useMemo(() => {
+    const sorted = [...filteredItems].sort((a, b) => {
+      let compareValue = 0;
+      
+      switch (sortBy) {
+        case 'name':
+          compareValue = a.text.localeCompare(b.text);
+          break;
+        case 'category':
+          compareValue = (a.category || '').localeCompare(b.category || '');
+          break;
+        case 'shop':
+          compareValue = (a.shop_name || '').localeCompare(b.shop_name || '');
+          break;
+        case 'created':
+          compareValue = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+        case 'completed':
+          compareValue = Number(a.completed) - Number(b.completed);
+          break;
+        default:
+          compareValue = 0;
+      }
+      
+      return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
+    
+    return sorted;
+  }, [filteredItems, sortBy, sortOrder]);
+
   const groupedItems = useMemo(() => {
     const groups: { [key: string]: typeof items } = {};
     
-    filteredItems.forEach(item => {
+    sortedItems.forEach(item => {
       let groupKey: string;
       
       if (groupBy === 'category') {
@@ -63,7 +101,7 @@ const ShoppingList = () => {
       name: groupKey,
       items: groups[groupKey]
     }));
-  }, [filteredItems, groupBy]);
+  }, [sortedItems, groupBy]);
 
   const handleGroupChange = (newGroupBy: 'category' | 'shop') => {
     setGroupBy(newGroupBy);
@@ -76,6 +114,15 @@ const ShoppingList = () => {
 
   const handleDeleteCategory = async (categoryName: string) => {
     await deleteCategoryWithItems(categoryName);
+  };
+
+  const handleSortChange = (newSortBy: typeof sortBy) => {
+    if (newSortBy === sortBy) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder('asc');
+    }
   };
 
   if (loading) {
@@ -113,16 +160,46 @@ const ShoppingList = () => {
                 <div className="flex-1">
                   <GroupingToggle groupBy={groupBy} onGroupChange={handleGroupChange} />
                 </div>
-                <div className="flex justify-end">
+                <div className="flex gap-2">
                   <Button
                     variant={showCompleted ? "default" : "outline"}
-                    size="sm"
+                    size="icon"
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="whitespace-nowrap h-10 px-4 font-medium shadow-sm"
+                    className="h-10 w-10"
+                    title={showCompleted ? 'Hide completed items' : 'Show completed items'}
                   >
-                    <Filter className="h-4 w-4 mr-2" />
-                    {showCompleted ? 'Hide' : 'Show'} Completed
+                    <Filter className="h-4 w-4" />
                   </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10"
+                        title="Sort options"
+                      >
+                        <ArrowUpDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => handleSortChange('name')}>
+                        Sort by Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSortChange('category')}>
+                        Sort by Category {sortBy === 'category' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSortChange('shop')}>
+                        Sort by Shop {sortBy === 'shop' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSortChange('created')}>
+                        Sort by Date Added {sortBy === 'created' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSortChange('completed')}>
+                        Sort by Status {sortBy === 'completed' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
