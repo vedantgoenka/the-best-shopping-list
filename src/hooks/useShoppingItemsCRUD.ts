@@ -45,7 +45,7 @@ export const useShoppingItemsCRUD = (
             if (a.completed !== b.completed) {
               return a.completed ? 1 : -1;
             }
-            return b.order_index - a.order_index; // Reverse order (highest first)
+            return b.order_index - a.order_index; // Highest order_index first
           });
         }
         
@@ -115,16 +115,19 @@ export const useShoppingItemsCRUD = (
       });
 
       if (maintainOrder) {
+        // When maintaining order (like during import), add and sort properly
         setItems(prev => {
           const newItems = [...prev, newItem];
           return newItems.sort((a, b) => {
             if (a.completed !== b.completed) {
               return a.completed ? 1 : -1;
             }
-            return b.order_index - a.order_index; // Reverse order (highest first)
+            // Sort by order_index descending (highest first) - this ensures newest imports appear at top
+            return b.order_index - a.order_index;
           });
         });
       } else {
+        // Regular add - just add to the top
         setItems(prev => [newItem, ...prev]);
       }
       showItemAdded(newItem);
