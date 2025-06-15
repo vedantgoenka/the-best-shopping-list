@@ -25,17 +25,45 @@ const ShoppingList = () => {
     completed: boolean;
     category?: string;
   }>) => {
-    // Check for duplicates and handle them gracefully
-    const existingItemTexts = new Set(items.map(item => item.text.toLowerCase()));
-    const duplicates: string[] = [];
+    const existingItemsMap = new Map(
+      items.map(item => [item.text.toLowerCase(), item])
+    );
+    
     const newItems: typeof importedItems = [];
+    const duplicatesToUpdate: Array<{
+      existingItem: any;
+      updates: any;
+    }> = [];
 
-    for (const item of importedItems) {
-      if (existingItemTexts.has(item.text.toLowerCase())) {
-        duplicates.push(item.text);
+    for (const importedItem of importedItems) {
+      const existingItem = existingItemsMap.get(importedItem.text.toLowerCase());
+      
+      if (existingItem) {
+        // Check if we need to update the existing item
+        const updates: any = {};
+        
+        // Update completion status if different
+        if (existingItem.completed !== importedItem.completed) {
+          updates.completed = importedItem.completed;
+        }
+        
+        // Update quantity if different and imported quantity is greater than 1
+        if (importedItem.quantity > 1 && existingItem.quantity !== importedItem.quantity) {
+          updates.quantity = importedItem.quantity;
+        }
+        
+        // Update category if imported item has one and existing doesn't, or if they're different
+        if (importedItem.category && 
+            (!existingItem.category || existingItem.category !== importedItem.category)) {
+          updates.category = importedItem.category;
+        }
+        
+        // Only add to update list if there are actual changes
+        if (Object.keys(updates).length > 0) {
+          duplicatesToUpdate.push({ existingItem, updates });
+        }
       } else {
-        newItems.push(item);
-        existingItemTexts.add(item.text.toLowerCase());
+        newItems.push(importedItem);
       }
     }
 
@@ -44,31 +72,24 @@ const ShoppingList = () => {
       addItem(item.text, item.quantity, item.category, undefined)
     );
     
-    await Promise.all(addPromises);
+    // Update existing items with new information
+    const updatePromises = duplicatesToUpdate.map(({ existingItem, updates }) => 
+      updateItem(existingItem.id, updates)
+    );
+    
+    await Promise.all([...addPromises, ...updatePromises]);
 
-    // Update completion status for items that were marked as completed in import
-    const completedItems = newItems.filter(item => item.completed);
-    if (completedItems.length > 0) {
-      // We need to find the newly added items and mark them as completed
-      // This is a bit tricky since we need to wait for the items to be added first
-      setTimeout(async () => {
-        const updatedItems = await refetch();
-        const updatePromises = completedItems.map(importedItem => {
-          const foundItem = items.find(item => 
-            item.text.toLowerCase() === importedItem.text.toLowerCase() && 
-            !item.completed
-          );
-          if (foundItem) {
-            return updateItem(foundItem.id, { completed: true });
-          }
-        }).filter(Boolean);
-        
-        await Promise.all(updatePromises);
-      }, 1000);
+    // Show summary of what was imported and updated
+    const summary = [];
+    if (newItems.length > 0) {
+      summary.push(`${newItems.length} new items added`);
     }
-
-    if (duplicates.length > 0) {
-      console.log(`Skipped ${duplicates.length} duplicate items:`, duplicates);
+    if (duplicatesToUpdate.length > 0) {
+      summary.push(`${duplicatesToUpdate.length} existing items updated`);
+    }
+    
+    if (summary.length > 0) {
+      console.log('Import summary:', summary.join(', '));
     }
   };
 
