@@ -8,9 +8,10 @@ import GroupingToggle from './GroupingToggle';
 import ImportItemsDialog from './ImportItemsDialog';
 import DragDropList from './DragDropList';
 import SortableShoppingItem from './SortableShoppingItem';
+import CategoryDeleteDialog from './CategoryDeleteDialog';
 
 const ShoppingList = () => {
-  const { items, loading, addItem, updateItem, deleteItem, reorderItems } = useShoppingItems();
+  const { items, loading, addItem, updateItem, deleteItem, deleteCategoryWithItems, reorderItems } = useShoppingItems();
   const [searchTerm, setSearchTerm] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [groupBy, setGroupBy] = useState<'category' | 'shop'>(() => {
@@ -69,6 +70,10 @@ const ShoppingList = () => {
 
   const handleReorder = (reorderedItems: typeof items) => {
     reorderItems(reorderedItems);
+  };
+
+  const handleDeleteCategory = async (categoryName: string) => {
+    await deleteCategoryWithItems(categoryName);
   };
 
   if (loading) {
@@ -149,9 +154,18 @@ const ShoppingList = () => {
                 <div className="space-y-6">
                   {groupedItems.map(group => (
                     <div key={group.name} className="space-y-3">
-                      <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2">
-                        {group.name} ({group.items.length})
-                      </h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2 flex-1">
+                          {group.name} ({group.items.length})
+                        </h3>
+                        {groupBy === 'category' && group.name !== 'No Category' && (
+                          <CategoryDeleteDialog
+                            categoryName={group.name}
+                            itemCount={group.items.length}
+                            onConfirmDelete={handleDeleteCategory}
+                          />
+                        )}
+                      </div>
                       <DragDropList items={group.items} onReorder={handleReorder}>
                         <div className="space-y-2">
                           {group.items.map(item => (

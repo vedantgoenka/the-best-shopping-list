@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { ShoppingItem } from '@/types/shoppingItem';
@@ -113,7 +114,7 @@ export const useShoppingItems = () => {
       const quantityText = getQuantityText(newItem.quantity);
       toast({
         title: "Item added!",
-        description: `"${quantityText}${newItem.text}" was added to your shopping list.`,
+        description: `"${newItem.text}${quantityText}" was added to your shopping list.`,
       });
       return true;
     } catch (error) {
@@ -165,7 +166,7 @@ export const useShoppingItems = () => {
         const quantityText = getQuantityText(itemToDelete.quantity);
         toast({
           title: "Item removed",
-          description: `"${quantityText}${itemToDelete.text}" was removed from your list.`,
+          description: `"${itemToDelete.text}${quantityText}" was removed from your list.`,
         });
       }
       return true;
@@ -180,12 +181,37 @@ export const useShoppingItems = () => {
     }
   };
 
+  const deleteCategoryWithItems = async (categoryName: string) => {
+    try {
+      const itemsInCategory = items.filter(item => item.category === categoryName);
+      
+      await shoppingItemsService.deleteItemsByCategory(categoryName);
+
+      setItems(prev => prev.filter(item => item.category !== categoryName));
+      
+      toast({
+        title: "Category deleted",
+        description: `Category "${categoryName}" and ${itemsInCategory.length} item${itemsInCategory.length !== 1 ? 's' : ''} removed.`,
+      });
+      return true;
+    } catch (error) {
+      console.error('Unexpected error deleting category:', error);
+      toast({
+        title: "Error deleting category",
+        description: "An unexpected error occurred while deleting the category.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   return {
     items,
     loading,
     addItem,
     updateItem,
     deleteItem,
+    deleteCategoryWithItems,
     reorderItems,
     refetch: loadItems,
   };

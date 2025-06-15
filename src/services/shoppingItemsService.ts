@@ -72,6 +72,18 @@ export const shoppingItemsService = {
     }
   },
 
+  async deleteItemsByCategory(categoryName: string) {
+    const { error } = await supabase
+      .from('shopping_items')
+      .delete()
+      .eq('category', categoryName);
+
+    if (error) {
+      console.error('Error deleting items by category:', error);
+      throw new Error('Failed to delete items by category');
+    }
+  },
+
   async updateItemOrder(id: string, orderIndex: number) {
     const { error } = await supabase
       .from('shopping_items')
