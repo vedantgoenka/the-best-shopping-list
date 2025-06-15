@@ -1,24 +1,16 @@
-
 import React, { useState, useMemo } from 'react';
-import { ShoppingBag, Filter, ArrowUpDown, Grid3X3, Store, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ShoppingBag } from 'lucide-react';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { useShoppingItems } from '@/hooks/useShoppingItems';
 import SearchAndAddItem from './SearchAndAddItem';
-import ImportItemsDialog from './ImportItemsDialog';
 import DragDropList from './DragDropList';
 import SortableShoppingItem from './SortableShoppingItem';
-import CategoryDeleteDialog from './CategoryDeleteDialog';
 import Header from './Header';
 import ProgressBanner from './ProgressBanner';
+import FilterControls from './FilterControls';
+import SortControls from './SortControls';
+import GroupHeader from './GroupHeader';
+import EmptyState from './EmptyState';
 
 const ShoppingList = () => {
   const { items, loading, addItem, updateItem, deleteItem, deleteCategoryWithItems, reorderItems } = useShoppingItems();
@@ -72,7 +64,6 @@ const ShoppingList = () => {
     return sorted;
   }, [filteredItems, sortBy, sortOrder]);
 
-  // Calculate progress data for all items (not filtered) to show true category/shop completion status
   const allItemsProgressData = useMemo(() => {
     const groups: { [key: string]: { items: typeof items, completedCount: number, totalCount: number, progressPercentage: number } } = {};
     
@@ -101,7 +92,6 @@ const ShoppingList = () => {
       }
     });
 
-    // Calculate progress percentages
     Object.keys(groups).forEach(groupKey => {
       const group = groups[groupKey];
       group.progressPercentage = group.totalCount > 0 
@@ -130,7 +120,6 @@ const ShoppingList = () => {
       groups[groupKey].push(item);
     });
 
-    // Sort groups alphabetically, but keep "No Category"/"No Shop" at the end
     const sortedGroups = Object.keys(groups).sort((a, b) => {
       const noGroupA = a.startsWith('No ');
       const noGroupB = b.startsWith('No ');
@@ -175,10 +164,6 @@ const ShoppingList = () => {
     }
   };
 
-  const handleToggleChange = (checked: boolean) => {
-    handleGroupChange(checked ? 'shop' : 'category');
-  };
-
   const toggleGroupCollapse = (groupName: string) => {
     setCollapsedGroups(prev => {
       const newSet = new Set(prev);
@@ -220,96 +205,30 @@ const ShoppingList = () => {
             searchTerm={searchTerm}
           />
           
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border-[0.5px] border-white/40 overflow-hidden">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/40 overflow-hidden">
             <div className="p-3 sm:p-6 border-b border-gray-100 bg-white/50">
               <div className="flex items-center justify-between gap-2 sm:gap-4">
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
-                    <span className="text-xs sm:text-sm font-medium text-gray-700">Category</span>
-                  </div>
-                  
-                  <Switch
-                    checked={groupBy === 'shop'}
-                    onCheckedChange={handleToggleChange}
-                    className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
-                  />
-                  
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <span className="text-xs sm:text-sm font-medium text-gray-700">Shop</span>
-                    <Store className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
-                  </div>
-                </div>
+                <FilterControls
+                  groupBy={groupBy}
+                  showCompleted={showCompleted}
+                  onGroupChange={handleGroupChange}
+                  onShowCompletedChange={setShowCompleted}
+                />
                 
-                <div className="flex gap-1 sm:gap-2">
-                  <Button
-                    variant={showCompleted ? "default" : "outline"}
-                    size="icon"
-                    onClick={() => setShowCompleted(!showCompleted)}
-                    className="h-8 w-8 sm:h-10 sm:w-10"
-                    title={showCompleted ? 'Hide completed items' : 'Show completed items'}
-                  >
-                    <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </Button>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 sm:h-10 sm:w-10"
-                        title="Sort options"
-                      >
-                        <ArrowUpDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => handleSortChange('name')}>
-                        Sort by Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSortChange('category')}>
-                        Sort by Category {sortBy === 'category' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSortChange('shop')}>
-                        Sort by Shop {sortBy === 'shop' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSortChange('created')}>
-                        Sort by Date Added {sortBy === 'created' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSortChange('completed')}>
-                        Sort by Status {sortBy === 'completed' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <SortControls
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                  onSortChange={handleSortChange}
+                />
               </div>
             </div>
 
             <div className="p-3 sm:p-6">
               {filteredItems.length === 0 ? (
-                <div className="text-center py-8 sm:py-16">
-                  <div className="bg-gray-50 rounded-full w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                    <ShoppingBag className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
-                    {searchTerm ? 'No matching items' : 'Your list is empty'}
-                  </h3>
-                  <p className="text-gray-500 text-sm sm:text-lg mb-4 sm:mb-6">
-                    {searchTerm 
-                      ? 'Try adjusting your search terms or clear the filter' 
-                      : 'Add your first item to get started with your shopping list'
-                    }
-                  </p>
-                  {searchTerm && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setSearchTerm('')}
-                      className="shadow-sm"
-                    >
-                      Clear search
-                    </Button>
-                  )}
-                </div>
+                <EmptyState
+                  searchTerm={searchTerm}
+                  onClearSearch={() => setSearchTerm('')}
+                />
               ) : (
                 <div className="space-y-6 sm:space-y-8">
                   {groupedItems.map(group => (
@@ -319,37 +238,16 @@ const ShoppingList = () => {
                       onOpenChange={() => toggleGroupCollapse(group.name)}
                     >
                       <div className="space-y-3 sm:space-y-4">
-                        <div className="flex items-center justify-between">
-                          <CollapsibleTrigger className="flex items-center gap-2 sm:gap-3 hover:bg-gray-50 rounded-lg p-1 sm:p-2 -m-1 sm:-m-2 transition-colors">
-                            <ChevronDown 
-                              className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-500 transition-transform duration-200 ${
-                                collapsedGroups.has(group.name) ? '-rotate-90' : ''
-                              }`} 
-                            />
-                            <h3 className="text-lg sm:text-xl font-bold text-gray-800">
-                              {group.name}
-                            </h3>
-                            <span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
-                              {group.items.length}
-                            </span>
-                            <div className="flex items-center gap-1 sm:gap-2 ml-1 sm:ml-2">
-                              <Progress 
-                                value={group.progressPercentage} 
-                                className="w-16 sm:w-20 h-2"
-                              />
-                              <span className="text-xs text-gray-500 min-w-[2.5rem] sm:min-w-[3rem]">
-                                {group.completedCount}/{group.totalCount}
-                              </span>
-                            </div>
-                          </CollapsibleTrigger>
-                          {groupBy === 'category' && group.name !== 'No Category' && (
-                            <CategoryDeleteDialog
-                              categoryName={group.name}
-                              itemCount={group.items.length}
-                              onConfirmDelete={handleDeleteCategory}
-                            />
-                          )}
-                        </div>
+                        <GroupHeader
+                          groupName={group.name}
+                          itemCount={group.items.length}
+                          completedCount={group.completedCount}
+                          totalCount={group.totalCount}
+                          progressPercentage={group.progressPercentage}
+                          isCollapsed={collapsedGroups.has(group.name)}
+                          groupBy={groupBy}
+                          onDeleteCategory={handleDeleteCategory}
+                        />
                         <CollapsibleContent>
                           <DragDropList items={group.items} onReorder={handleReorder}>
                             <div className="space-y-2 sm:space-y-3">
