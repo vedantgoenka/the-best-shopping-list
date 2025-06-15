@@ -29,11 +29,7 @@ const Header = () => {
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <ShoppingBag className="h-8 w-8 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-800">Shopping List</h1>
-            </div>
+          <div className="flex items-center">
             <ShoppingListDropdown />
           </div>
           

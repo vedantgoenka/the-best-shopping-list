@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, Plus, Edit, Trash2, List } from 'lucide-react';
+import { ChevronDown, Plus, Edit, Trash2, ShoppingBag } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,13 +27,10 @@ const ShoppingListDropdown = () => {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-auto p-2 flex items-center gap-2 text-left">
-            <List className="h-4 w-4" />
-            <div className="flex flex-col">
-              <span className="text-sm font-medium truncate max-w-32">{currentList.name}</span>
-              <span className="text-xs text-muted-foreground">Manage Lists</span>
-            </div>
-            <ChevronDown className="h-3 w-3" />
+          <Button variant="ghost" className="h-auto min-h-[3rem] p-3 flex items-center gap-3 text-left">
+            <ShoppingBag className="text-blue-600 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} />
+            <span className="text-xl font-bold text-gray-800">{currentList.name}</span>
+            <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
