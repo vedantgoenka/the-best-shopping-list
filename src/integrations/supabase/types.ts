@@ -16,6 +16,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          order_index: number
           quantity: number
           shop_name: string | null
           text: string
@@ -27,6 +28,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          order_index?: number
           quantity?: number
           shop_name?: string | null
           text: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          order_index?: number
           quantity?: number
           shop_name?: string | null
           text?: string

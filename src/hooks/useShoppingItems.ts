@@ -10,6 +10,7 @@ interface ShoppingItem {
   category?: string | null;
   notes?: string | null;
   shop_name?: string | null;
+  order_index: number;
   created_at: string;
   updated_at: string;
 }
@@ -30,7 +31,7 @@ export const useShoppingItems = () => {
         .from('shopping_items')
         .select('*')
         .order('completed', { ascending: true })
-        .order('updated_at', { ascending: false });
+        .order('order_index', { ascending: true });
 
       if (error) {
         console.error('Error loading items:', error);
@@ -57,10 +58,32 @@ export const useShoppingItems = () => {
 
   const reorderItems = async (reorderedItems: ShoppingItem[]) => {
     try {
+      // Update order_index for each reordered item in the database
+      const updates = reorderedItems.map((item, index) => ({
+        id: item.id,
+        order_index: index,
+      }));
+
+      // Batch update order_index values
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('shopping_items')
+          .update({ order_index: update.order_index })
+          .eq('id', update.id);
+
+        if (error) {
+          console.error('Error updating order_index:', error);
+          throw error;
+        }
+      }
+
       // Update the local state by merging the reordered items back into the complete array
       setItems(prevItems => {
-        // Create a map of the reordered items for quick lookup
-        const reorderedMap = new Map(reorderedItems.map(item => [item.id, item]));
+        // Create a map of the reordered items with updated order_index for quick lookup
+        const reorderedMap = new Map(reorderedItems.map((item, index) => [
+          item.id, 
+          { ...item, order_index: index }
+        ]));
         
         // Update the items array, replacing items that were reordered while keeping others
         const updatedItems = prevItems.map(item => 
@@ -72,13 +95,13 @@ export const useShoppingItems = () => {
 
       toast({
         title: "Items reordered",
-        description: "Your shopping list order has been updated.",
+        description: "Your shopping list order has been saved.",
       });
     } catch (error) {
       console.error('Error reordering items:', error);
       toast({
         title: "Error reordering items",
-        description: "Failed to update the item order.",
+        description: "Failed to save the item order.",
         variant: "destructive",
       });
     }
@@ -144,6 +167,9 @@ export const useShoppingItems = () => {
         }
       }
 
+      // Get the highest order_index to add new item at the top
+      const maxOrderIndex = items.length > 0 ? Math.max(...items.map(item => item.order_index)) : -1;
+
       // If no existing item found, add new item
       const { data, error } = await supabase
         .from('shopping_items')
@@ -154,6 +180,7 @@ export const useShoppingItems = () => {
           category: category?.trim() || null,
           notes: notes?.trim() || null,
           shop_name: shopName?.trim() || null,
+          order_index: maxOrderIndex + 1,
         })
         .select()
         .single();
