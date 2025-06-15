@@ -27,10 +27,10 @@ const ShoppingListDropdown = () => {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-auto min-h-[3rem] p-3 flex items-center gap-3 text-left">
+          <Button variant="ghost" className="h-auto p-2 flex items-center gap-2 text-left">
             <ShoppingBag className="text-blue-600 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} />
             <span className="text-xl font-bold text-gray-800">{currentList.name}</span>
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-3 w-3" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
