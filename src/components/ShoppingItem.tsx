@@ -186,18 +186,11 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
-          {(item.category || item.notes) && (
-            <div className="ml-8 space-y-1">
-              {item.category && (
-                <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full inline-block">
-                  {item.category}
-                </div>
-              )}
-              {item.notes && (
-                <div className="text-sm text-gray-600 italic">
-                  {item.notes}
-                </div>
-              )}
+          {item.notes && (
+            <div className="ml-8">
+              <div className="text-sm text-gray-600 italic">
+                {item.notes}
+              </div>
             </div>
           )}
         </div>
