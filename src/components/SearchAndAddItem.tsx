@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Search, Plus, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -111,7 +112,7 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
 
   return (
     <div className="w-full">
-      <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden">
         <div className="p-4">
           <div className="flex gap-3 items-center">
             <div className="relative flex-1">
@@ -122,7 +123,7 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="pl-12 pr-4 text-lg h-12 border-gray-200 focus:border-blue-400 focus:ring-blue-400 bg-white rounded-lg"
+                className="pl-12 pr-4 text-lg h-12 border-0 focus:border-0 focus:ring-0 bg-white rounded-lg shadow-none"
               />
             </div>
             

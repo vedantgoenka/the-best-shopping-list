@@ -38,12 +38,12 @@ const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
     <>
       <Button
         variant="outline"
-        size="sm"
+        size="icon"
         onClick={() => setIsOpen(true)}
-        className="whitespace-nowrap"
+        className="h-12 w-12"
+        title="Import items"
       >
-        <Import className="h-4 w-4 mr-2" />
-        Import
+        <Import className="h-5 w-5" />
       </Button>
 
       {isOpen && (
