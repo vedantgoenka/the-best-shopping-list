@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -58,9 +57,18 @@ export const useShoppingItems = () => {
 
   const reorderItems = async (reorderedItems: ShoppingItem[]) => {
     try {
-      // For now, just update the local state since we don't have order_index column
-      // In the future, you could add an order_index column to persist the order
-      setItems(reorderedItems);
+      // Update the local state by merging the reordered items back into the complete array
+      setItems(prevItems => {
+        // Create a map of the reordered items for quick lookup
+        const reorderedMap = new Map(reorderedItems.map(item => [item.id, item]));
+        
+        // Update the items array, replacing items that were reordered while keeping others
+        const updatedItems = prevItems.map(item => 
+          reorderedMap.has(item.id) ? reorderedMap.get(item.id)! : item
+        );
+        
+        return updatedItems;
+      });
 
       toast({
         title: "Items reordered",
