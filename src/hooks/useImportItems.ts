@@ -4,7 +4,7 @@ import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
 
 interface UseImportItemsProps {
-  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean) => Promise<boolean>;
+  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder?: boolean) => Promise<boolean>;
   onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
   items: Array<{ id: string; text: string; quantity: number; category?: string | null }>;
 }
@@ -38,7 +38,7 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
       let addedCount = 0;
       let completedCount = 0;
 
-      // Process items and pass completion status directly to onAddItem
+      // Process items in order and pass maintainOrder=true to preserve sequence
       for (const item of parsedItems) {
         const success = await onAddItem(
           item.text, 
@@ -46,7 +46,8 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
           item.category, 
           undefined, // notes
           undefined, // shopName
-          item.completed // pass completion status directly
+          item.completed, // pass completion status directly
+          true // maintainOrder=true to add items at the end
         );
         
         if (success) {

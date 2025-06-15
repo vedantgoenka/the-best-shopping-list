@@ -6,7 +6,7 @@ import { useImportItems } from '@/hooks/useImportItems';
 import ImportDialogContent from './ImportDialogContent';
 
 interface ImportItemsDialogProps {
-  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean) => Promise<boolean>;
+  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder?: boolean) => Promise<boolean>;
   onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
   items: Array<{ id: string; text: string; quantity: number; category?: string | null }>;
 }

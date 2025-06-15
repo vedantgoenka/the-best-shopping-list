@@ -25,7 +25,7 @@ export const useShoppingItemsCRUD = (
     showCategoryDeleteError,
   } = useShoppingItemsToast();
 
-  const addItem = async (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean) => {
+  const addItem = async (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder = false) => {
     try {
       // Check for existing item in current state (only among non-deleted items)
       const existingItem = items.find(item => 
@@ -65,7 +65,8 @@ export const useShoppingItemsCRUD = (
         completed: completed || false, // Set completion status when creating
       });
 
-      setItems(prev => [newItem, ...prev]);
+      // Add item to beginning or end based on maintainOrder flag
+      setItems(prev => maintainOrder ? [...prev, newItem] : [newItem, ...prev]);
       showItemAdded(newItem);
       return true;
     } catch (error) {
