@@ -1,12 +1,21 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
 import { getMaxOrderIndex } from '@/utils/shoppingItemUtils';
 import { ShoppingItem } from '@/types/shoppingItem';
 
 interface UseImportItemsProps {
-  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder?: boolean, specificOrderIndex?: number) => Promise<boolean>;
+  onAddItem: (
+    text: string,
+    quantity: number,
+    category?: string,
+    notes?: string,
+    shopName?: string,
+    completed?: boolean,
+    maintainOrder?: boolean,
+    specificOrderIndex?: number
+  ) => Promise<boolean>;
   items: ShoppingItem[];
 }
 
@@ -44,51 +53,83 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
     setIsImporting(true);
 
     try {
-      // Pre-calculate order indices for all items
-      const startOrderIndex = getMaxOrderIndex(items) + 1;
-      const itemsToImport: ItemToImport[] = parsed.map((item, index) => ({
-        ...item,
-        orderIndex: startOrderIndex + index,
-      }));
+      // Step 1: Lowercase list of existing item texts (for duplicate detection)
+      const existingTexts = new Set(items.map(item => item.text.trim().toLowerCase()));
 
-      console.log(`Starting import of ${itemsToImport.length} items with order indices from ${startOrderIndex}`);
-
-      // Process all items in parallel
-      const results = await Promise.allSettled(
-        itemsToImport.map(item =>
-          onAddItem(
-            item.text,
-            item.quantity,
-            item.category,
-            undefined, // notes
-            undefined, // shopName
-            item.completed,
-            true, // maintainOrder
-            item.orderIndex
-          )
-        )
-      );
-
-      // Count successful additions and completed items
-      let addedCount = 0;
-      let completedInBatch = 0;
-      
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && result.value) {
-          addedCount++;
-          if (itemsToImport[index].completed) {
-            completedInBatch++;
-          }
-        } else if (result.status === 'rejected') {
-          console.error(`Failed to import item ${index}:`, result.reason);
+      // Step 2: Split parsed items into new and duplicate
+      const uniqueToImport: ParsedItem[] = [];
+      const duplicates: ParsedItem[] = [];
+      parsed.forEach(item => {
+        const normalized = item.text.trim().toLowerCase();
+        if (existingTexts.has(normalized)) {
+          duplicates.push(item);
+        } else {
+          uniqueToImport.push(item);
         }
       });
 
-      const completedMessage = completedInBatch > 0 ? ` ${completedInBatch} items marked as completed.` : '';
-      
+      // Step 3: Calculate order indices for new unique items only
+      const startOrderIndex = getMaxOrderIndex(items) + 1;
+      const itemsToImport: ItemToImport[] = uniqueToImport.map((item, idx) => ({
+        ...item,
+        orderIndex: startOrderIndex + idx,
+      }));
+
+      // Step 4: Add new items SEQUENTIALLY (and in original order)
+      let addedCount = 0;
+      let completedInBatch = 0;
+      for (const item of itemsToImport) {
+        const success = await onAddItem(
+          item.text,
+          item.quantity,
+          item.category,
+          undefined, // notes
+          undefined, // shopName
+          item.completed,
+          true,
+          item.orderIndex
+        );
+        if (success) {
+          addedCount++;
+          if (item.completed) completedInBatch++;
+        }
+      }
+
+      // Step 5: For duplicates, optionally update them if completed (since user may want to mark done)
+      let updatedDuplicates = 0;
+      let completedUpdated = 0;
+      for (const item of duplicates) {
+        if (item.completed) {
+          // Find the matching item's id
+          const match = items.find(i => i.text.trim().toLowerCase() === item.text.trim().toLowerCase());
+          if (match && !match.completed) {
+            // Only update if not already completed
+            // Assume user's onAddItem handles this as an update
+            const updated = await onAddItem(
+              item.text,
+              match.quantity,
+              item.category || match.category || undefined,
+              match.notes || undefined,
+              match.shop_name || undefined,
+              true, // completed
+              true,
+              match.order_index
+            );
+            if (updated) {
+              updatedDuplicates++;
+              completedUpdated++;
+            }
+          }
+        }
+      }
+      // Feedback message
+      let desc = `${addedCount} of ${parsed.length} items were added to your shopping list.`;
+      if (completedInBatch > 0) desc += ` ${completedInBatch} item${completedInBatch === 1 ? '' : 's'} marked as completed.`;
+      if (updatedDuplicates > 0) desc += ` ${updatedDuplicates} duplicate${updatedDuplicates === 1 ? '' : 's'} updated as completed.`;
+
       toast({
         title: "Import complete!",
-        description: `${addedCount} of ${itemsToImport.length} items were added to your shopping list.${completedMessage}`,
+        description: desc,
       });
 
     } catch (error) {
