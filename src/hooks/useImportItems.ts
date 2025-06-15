@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
+import { getMaxOrderIndex } from '@/utils/shoppingItemUtils';
 
 interface UseImportItemsProps {
   onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder?: boolean) => Promise<boolean>;
@@ -38,8 +39,10 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
       let addedCount = 0;
       let completedCount = 0;
 
-      // Process items in order and pass maintainOrder=true to preserve sequence
-      // Items will be added sequentially, each getting the next available order_index
+      // Get the starting order index once and increment for each item
+      let currentOrderIndex = getMaxOrderIndex(items) + 1;
+
+      // Process items in order with manually managed order indices
       for (const item of parsedItems) {
         const success = await onAddItem(
           item.text, 
@@ -48,7 +51,8 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
           undefined, // notes
           undefined, // shopName
           item.completed, // pass completion status directly
-          true // maintainOrder=true to add items at the end in order
+          true, // maintainOrder=true to add items at the end in order
+          currentOrderIndex // pass the specific order index
         );
         
         if (success) {
@@ -56,6 +60,7 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
           if (item.completed) {
             completedCount++;
           }
+          currentOrderIndex++; // increment for next item
         }
       }
       

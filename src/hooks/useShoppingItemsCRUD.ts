@@ -1,4 +1,3 @@
-
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
 import { 
@@ -25,7 +24,16 @@ export const useShoppingItemsCRUD = (
     showCategoryDeleteError,
   } = useShoppingItemsToast();
 
-  const addItem = async (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder = false) => {
+  const addItem = async (
+    text: string, 
+    quantity: number, 
+    category?: string, 
+    notes?: string, 
+    shopName?: string, 
+    completed?: boolean, 
+    maintainOrder = false,
+    specificOrderIndex?: number
+  ) => {
     try {
       // Check for existing item in current state (only among non-deleted items)
       const existingItem = items.find(item => 
@@ -54,15 +62,16 @@ export const useShoppingItemsCRUD = (
       }
 
       // Item doesn't exist in current state, create new one
-      // Get fresh max order index from current items state
-      const maxOrderIndex = getMaxOrderIndex(items);
+      // Use specific order index if provided, otherwise calculate from current items
+      const orderIndex = specificOrderIndex ?? (getMaxOrderIndex(items) + 1);
+      
       const newItem = await shoppingItemsService.createItem({
         text,
         quantity: quantity || 1,
         category,
         notes,
         shop_name: shopName,
-        order_index: maxOrderIndex + 1,
+        order_index: orderIndex,
         completed: completed || false, // Set completion status when creating
       });
 
