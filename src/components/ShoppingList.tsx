@@ -1,6 +1,9 @@
+
 import React, { useState } from 'react';
 import { RefreshCw, Import } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useShoppingItems } from '@/hooks/useShoppingItems';
 import AddItemForm from './AddItemForm';
 import ShoppingItem from './ShoppingItem';
@@ -121,6 +124,28 @@ const ShoppingList = () => {
     return a.localeCompare(b);
   });
 
+  // Calculate category progress and determine which categories are fully completed
+  const categoryProgress = Object.keys(groupedItems).reduce((progress, category) => {
+    const categoryItems = groupedItems[category];
+    const completedInCategory = categoryItems.filter(item => item.completed).length;
+    const totalInCategory = categoryItems.length;
+    const percentage = totalInCategory > 0 ? (completedInCategory / totalInCategory) * 100 : 0;
+    
+    progress[category] = {
+      completed: completedInCategory,
+      total: totalInCategory,
+      percentage: percentage,
+      isFullyCompleted: percentage === 100
+    };
+    
+    return progress;
+  }, {} as Record<string, { completed: number; total: number; percentage: number; isFullyCompleted: boolean }>);
+
+  // Get default open categories (all incomplete categories)
+  const defaultOpenCategories = sortedCategories.filter(category => 
+    !categoryProgress[category]?.isFullyCompleted
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
@@ -181,29 +206,56 @@ const ShoppingList = () => {
               <p className="text-gray-400">Add some items to get started!</p>
             </div>
           ) : (
-            sortedCategories.map((category) => (
-              <div key={category} className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-gray-700">{category}</h2>
-                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                    {groupedItems[category].length}
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {groupedItems[category].map((item) => (
-                    <ShoppingItem
-                      key={item.id}
-                      item={item}
-                      onUpdate={updateItem}
-                      onDelete={deleteItem}
-                      draggedItem={draggedItem}
-                      onTouchStart={handleTouchStart}
-                      onTouchEnd={handleTouchEnd}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))
+            <Accordion type="multiple" defaultValue={defaultOpenCategories} className="space-y-4">
+              {sortedCategories.map((category) => {
+                const progress = categoryProgress[category];
+                const isFullyCompleted = progress?.isFullyCompleted;
+                
+                return (
+                  <AccordionItem key={category} value={category} className="border-none">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-50">
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="flex-1 text-left">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h2 className={`text-lg font-semibold ${isFullyCompleted ? 'text-green-600' : 'text-gray-700'}`}>
+                                {category}
+                              </h2>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                isFullyCompleted 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {progress?.completed}/{progress?.total}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={progress?.percentage || 0} 
+                              className="h-2 w-full"
+                            />
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="space-y-3 pt-2">
+                          {groupedItems[category].map((item) => (
+                            <ShoppingItem
+                              key={item.id}
+                              item={item}
+                              onUpdate={updateItem}
+                              onDelete={deleteItem}
+                              draggedItem={draggedItem}
+                              onTouchStart={handleTouchStart}
+                              onTouchEnd={handleTouchEnd}
+                            />
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </div>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
           )}
         </div>
 
@@ -211,7 +263,7 @@ const ShoppingList = () => {
         {items.length > 0 && (
           <div className="mt-8 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-gray-600 font-medium">Progress</span>
+              <span className="text-gray-600 font-medium">Overall Progress</span>
               <span className="text-sm text-gray-500">
                 {Math.round((completedCount / totalCount) * 100)}%
               </span>
