@@ -1,10 +1,9 @@
-
 import { useState } from 'react';
 
 export const useShoppingListState = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'category' | 'shop' | 'created' | 'completed'>('name');
+  const [sortBy, setSortBy] = useState<'manual' | 'name' | 'category' | 'shop' | 'created' | 'completed'>('manual');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [groupBy, setGroupBy] = useState<'category' | 'shop'>(() => {
     return (localStorage.getItem('shoppingListGroupBy') as 'category' | 'shop') || 'category';

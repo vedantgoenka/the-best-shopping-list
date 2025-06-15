@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { ShoppingItem } from '@/types/shoppingItem';
 
@@ -6,7 +5,7 @@ interface UseShoppingListFiltersProps {
   items: ShoppingItem[];
   searchTerm: string;
   showCompleted: boolean;
-  sortBy: 'name' | 'category' | 'shop' | 'created' | 'completed';
+  sortBy: 'manual' | 'name' | 'category' | 'shop' | 'created' | 'completed';
   sortOrder: 'asc' | 'desc';
   groupBy: 'category' | 'shop';
   isManuallyReordering: boolean;
@@ -42,6 +41,9 @@ export const useShoppingListFilters = ({
       let compareValue = 0;
       
       switch (sortBy) {
+        case 'manual':
+          compareValue = a.order_index - b.order_index;
+          break;
         case 'name':
           compareValue = a.text.localeCompare(b.text);
           break;

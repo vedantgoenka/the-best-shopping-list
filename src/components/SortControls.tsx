@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,9 +9,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface SortControlsProps {
-  sortBy: 'name' | 'category' | 'shop' | 'created' | 'completed';
+  sortBy: 'manual' | 'name' | 'category' | 'shop' | 'created' | 'completed';
   sortOrder: 'asc' | 'desc';
-  onSortChange: (sortBy: 'name' | 'category' | 'shop' | 'created' | 'completed') => void;
+  onSortChange: (sortBy: 'manual' | 'name' | 'category' | 'shop' | 'created' | 'completed') => void;
 }
 
 const SortControls: React.FC<SortControlsProps> = ({
@@ -33,6 +32,9 @@ const SortControls: React.FC<SortControlsProps> = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onClick={() => onSortChange('manual')}>
+          Manual Order {sortBy === 'manual' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onSortChange('name')}>
           Sort by Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
         </DropdownMenuItem>
