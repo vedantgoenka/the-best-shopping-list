@@ -39,6 +39,7 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
       let completedCount = 0;
 
       // Process items in order and pass maintainOrder=true to preserve sequence
+      // Items will be added sequentially, each getting the next available order_index
       for (const item of parsedItems) {
         const success = await onAddItem(
           item.text, 
@@ -47,7 +48,7 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
           undefined, // notes
           undefined, // shopName
           item.completed, // pass completion status directly
-          true // maintainOrder=true to add items at the end
+          true // maintainOrder=true to add items at the end in order
         );
         
         if (success) {

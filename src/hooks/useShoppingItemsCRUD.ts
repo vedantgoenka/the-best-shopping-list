@@ -54,6 +54,7 @@ export const useShoppingItemsCRUD = (
       }
 
       // Item doesn't exist in current state, create new one
+      // Get fresh max order index from current items state
       const maxOrderIndex = getMaxOrderIndex(items);
       const newItem = await shoppingItemsService.createItem({
         text,
@@ -66,7 +67,11 @@ export const useShoppingItemsCRUD = (
       });
 
       // Add item to beginning or end based on maintainOrder flag
-      setItems(prev => maintainOrder ? [...prev, newItem] : [newItem, ...prev]);
+      if (maintainOrder) {
+        setItems(prev => [...prev, newItem]);
+      } else {
+        setItems(prev => [newItem, ...prev]);
+      }
       showItemAdded(newItem);
       return true;
     } catch (error) {
