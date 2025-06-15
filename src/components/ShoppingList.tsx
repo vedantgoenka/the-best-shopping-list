@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import AddItemForm from './AddItemForm';
 import ShoppingItem from './ShoppingItem';
 import ImportItemsDialog from './ImportItemsDialog';
+import GroupingToggle from './GroupingToggle';
 
 interface DeletedItem {
   id: string;
@@ -27,6 +28,15 @@ const ShoppingList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [recentlyDeleted, setRecentlyDeleted] = useState<DeletedItem | null>(null);
   const [undoTimeout, setUndoTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [groupBy, setGroupBy] = useState<'category' | 'shop'>(() => {
+    const saved = localStorage.getItem('shopping-list-group-by');
+    return (saved as 'category' | 'shop') || 'category';
+  });
+
+  // Save grouping preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('shopping-list-group-by', groupBy);
+  }, [groupBy]);
 
   // Clear undo timeout on component unmount
   useEffect(() => {
@@ -203,41 +213,47 @@ const ShoppingList = () => {
   const completedCount = filteredItems.filter(item => item.completed).length;
   const totalCount = filteredItems.length;
 
-  // Group filtered items by category and sort by completion status
+  // Group filtered items by category or shop based on groupBy state
   const groupedItems = filteredItems.reduce((groups, item) => {
-    const category = item.category || 'Uncategorized';
-    if (!groups[category]) {
-      groups[category] = [];
+    const groupKey = groupBy === 'category' 
+      ? (item.category || 'Uncategorized')
+      : (item.shop_name || 'No Shop');
+    
+    if (!groups[groupKey]) {
+      groups[groupKey] = [];
     }
-    groups[category].push(item);
+    groups[groupKey].push(item);
     return groups;
   }, {} as Record<string, typeof filteredItems>);
 
-  // Sort items within each category by completion status (incomplete first)
-  Object.keys(groupedItems).forEach(category => {
-    groupedItems[category].sort((a, b) => {
+  // Sort items within each group by completion status (incomplete first)
+  Object.keys(groupedItems).forEach(groupKey => {
+    groupedItems[groupKey].sort((a, b) => {
       if (a.completed === b.completed) return 0;
       return a.completed ? 1 : -1; // incomplete items first
     });
   });
 
-  // Sort categories with "Uncategorized" last
-  const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
-    if (a === 'Uncategorized') return 1;
-    if (b === 'Uncategorized') return -1;
+  // Sort groups with "Uncategorized"/"No Shop" last
+  const sortedGroups = Object.keys(groupedItems).sort((a, b) => {
+    const isASpecial = a === 'Uncategorized' || a === 'No Shop';
+    const isBSpecial = b === 'Uncategorized' || b === 'No Shop';
+    
+    if (isASpecial && !isBSpecial) return 1;
+    if (!isASpecial && isBSpecial) return -1;
     return a.localeCompare(b);
   });
 
-  // Calculate category progress and determine which categories are fully completed
-  const categoryProgress = Object.keys(groupedItems).reduce((progress, category) => {
-    const categoryItems = groupedItems[category];
-    const completedInCategory = categoryItems.filter(item => item.completed).length;
-    const totalInCategory = categoryItems.length;
-    const percentage = totalInCategory > 0 ? (completedInCategory / totalInCategory) * 100 : 0;
+  // Calculate group progress and determine which groups are fully completed
+  const groupProgress = Object.keys(groupedItems).reduce((progress, groupKey) => {
+    const groupItems = groupedItems[groupKey];
+    const completedInGroup = groupItems.filter(item => item.completed).length;
+    const totalInGroup = groupItems.length;
+    const percentage = totalInGroup > 0 ? (completedInGroup / totalInGroup) * 100 : 0;
     
-    progress[category] = {
-      completed: completedInCategory,
-      total: totalInCategory,
+    progress[groupKey] = {
+      completed: completedInGroup,
+      total: totalInGroup,
       percentage: percentage,
       isFullyCompleted: percentage === 100
     };
@@ -245,9 +261,9 @@ const ShoppingList = () => {
     return progress;
   }, {} as Record<string, { completed: number; total: number; percentage: number; isFullyCompleted: boolean }>);
 
-  // Get default open categories (all incomplete categories)
-  const defaultOpenCategories = sortedCategories.filter(category => 
-    !categoryProgress[category]?.isFullyCompleted
+  // Get default open groups (all incomplete groups)
+  const defaultOpenGroups = sortedGroups.filter(groupKey => 
+    !groupProgress[groupKey]?.isFullyCompleted
   );
 
   if (loading) {
@@ -295,6 +311,9 @@ const ShoppingList = () => {
             }
           </p>
         </div>
+
+        {/* Grouping Toggle */}
+        <GroupingToggle groupBy={groupBy} onGroupByChange={setGroupBy} />
 
         {/* Search Bar */}
         <div className="mb-4 sm:mb-6">
@@ -348,7 +367,7 @@ const ShoppingList = () => {
         {/* Add Item Form */}
         <AddItemForm onAddItem={addItem} />
 
-        {/* Shopping Items Grouped by Category */}
+        {/* Shopping Items Grouped by Category or Shop */}
         <div className="space-y-4 sm:space-y-6">
           {filteredItems.length === 0 ? (
             <div className="text-center py-8 sm:py-12">
@@ -367,20 +386,20 @@ const ShoppingList = () => {
               </p>
             </div>
           ) : (
-            <Accordion type="multiple" defaultValue={defaultOpenCategories} className="space-y-3 sm:space-y-4">
-              {sortedCategories.map((category) => {
-                const progress = categoryProgress[category];
+            <Accordion type="multiple" defaultValue={defaultOpenGroups} className="space-y-3 sm:space-y-4">
+              {sortedGroups.map((groupKey) => {
+                const progress = groupProgress[groupKey];
                 const isFullyCompleted = progress?.isFullyCompleted;
                 
                 return (
-                  <AccordionItem key={category} value={category} className="border-none">
+                  <AccordionItem key={groupKey} value={groupKey} className="border-none">
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                       <AccordionTrigger className="px-3 sm:px-4 py-2 sm:py-3 hover:no-underline hover:bg-gray-50">
                         <div className="flex items-center gap-2 sm:gap-3 w-full">
                           <div className="flex-1 text-left">
                             <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
                               <h2 className={`text-sm sm:text-lg font-semibold ${isFullyCompleted ? 'text-green-600' : 'text-gray-700'}`}>
-                                {category}
+                                {groupKey}
                               </h2>
                               <span className={`text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
                                 isFullyCompleted 
@@ -399,7 +418,7 @@ const ShoppingList = () => {
                       </AccordionTrigger>
                       <AccordionContent className="px-3 sm:px-4 pb-3 sm:pb-4">
                         <div className="space-y-2 sm:space-y-3 pt-1 sm:pt-2">
-                          {groupedItems[category].map((item) => (
+                          {groupedItems[groupKey].map((item) => (
                             <ShoppingItem
                               key={item.id}
                               item={item}
