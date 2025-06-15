@@ -71,6 +71,46 @@ const ShoppingList = () => {
     return sorted;
   }, [filteredItems, sortBy, sortOrder]);
 
+  // Calculate progress data for all items (not filtered) to show true category/shop completion status
+  const allItemsProgressData = useMemo(() => {
+    const groups: { [key: string]: { items: typeof items, completedCount: number, totalCount: number, progressPercentage: number } } = {};
+    
+    items.forEach(item => {
+      let groupKey: string;
+      
+      if (groupBy === 'category') {
+        groupKey = item.category || 'No Category';
+      } else {
+        groupKey = item.shop_name || 'No Shop';
+      }
+      
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          items: [],
+          completedCount: 0,
+          totalCount: 0,
+          progressPercentage: 0
+        };
+      }
+      
+      groups[groupKey].items.push(item);
+      groups[groupKey].totalCount++;
+      if (item.completed) {
+        groups[groupKey].completedCount++;
+      }
+    });
+
+    // Calculate progress percentages
+    Object.keys(groups).forEach(groupKey => {
+      const group = groups[groupKey];
+      group.progressPercentage = group.totalCount > 0 
+        ? (group.completedCount / group.totalCount) * 100 
+        : 0;
+    });
+
+    return groups;
+  }, [items, groupBy]);
+
   const groupedItems = useMemo(() => {
     const groups: { [key: string]: typeof items } = {};
     
@@ -99,16 +139,18 @@ const ShoppingList = () => {
       return a.localeCompare(b);
     });
 
-    return sortedGroups.map(groupKey => ({
-      name: groupKey,
-      items: groups[groupKey],
-      completedCount: groups[groupKey].filter(item => item.completed).length,
-      totalCount: groups[groupKey].length,
-      progressPercentage: groups[groupKey].length > 0 
-        ? (groups[groupKey].filter(item => item.completed).length / groups[groupKey].length) * 100 
-        : 0
-    }));
-  }, [sortedItems, groupBy]);
+    return sortedGroups.map(groupKey => {
+      const progressData = allItemsProgressData[groupKey] || { completedCount: 0, totalCount: 0, progressPercentage: 0 };
+      
+      return {
+        name: groupKey,
+        items: groups[groupKey],
+        completedCount: progressData.completedCount,
+        totalCount: progressData.totalCount,
+        progressPercentage: progressData.progressPercentage
+      };
+    });
+  }, [sortedItems, groupBy, allItemsProgressData]);
 
   const handleGroupChange = (newGroupBy: 'category' | 'shop') => {
     setGroupBy(newGroupBy);
