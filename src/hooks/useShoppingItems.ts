@@ -54,6 +54,65 @@ export const useShoppingItems = () => {
 
   const addItem = async (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => {
     try {
+      // Check for existing item with the same text (case-insensitive)
+      const existingItem = items.find(item => 
+        item.text.toLowerCase() === text.trim().toLowerCase()
+      );
+
+      if (existingItem) {
+        // Prepare updates for the existing item
+        const updates: any = {};
+        
+        // Update quantity if new quantity is greater than 1 and different from existing
+        if (quantity > 1 && existingItem.quantity !== quantity) {
+          updates.quantity = quantity;
+        }
+        
+        // Update category if provided and different from existing (or if existing has no category)
+        if (category && category.trim() && 
+            (!existingItem.category || existingItem.category !== category.trim())) {
+          updates.category = category.trim();
+        }
+        
+        // Update shop if provided and different from existing (or if existing has no shop)
+        if (shopName && shopName.trim() && 
+            (!existingItem.shop_name || existingItem.shop_name !== shopName.trim())) {
+          updates.shop_name = shopName.trim();
+        }
+        
+        // Update notes if provided and different from existing (or if existing has no notes)
+        if (notes && notes.trim() && 
+            (!existingItem.notes || existingItem.notes !== notes.trim())) {
+          updates.notes = notes.trim();
+        }
+        
+        // If there are updates to make, update the existing item
+        if (Object.keys(updates).length > 0) {
+          const success = await updateItem(existingItem.id, updates);
+          if (success) {
+            const updateDetails = [];
+            if (updates.quantity) updateDetails.push(`quantity to ${updates.quantity}`);
+            if (updates.category) updateDetails.push(`category to "${updates.category}"`);
+            if (updates.shop_name) updateDetails.push(`shop to "${updates.shop_name}"`);
+            if (updates.notes) updateDetails.push('notes');
+            
+            toast({
+              title: "Item updated!",
+              description: `"${existingItem.text}" already exists. Updated ${updateDetails.join(', ')}.`,
+            });
+          }
+          return success;
+        } else {
+          // No updates needed, just notify the user
+          toast({
+            title: "Item already exists",
+            description: `"${existingItem.text}" is already in your list.`,
+          });
+          return true;
+        }
+      }
+
+      // If no existing item found, add new item
       const { data, error } = await supabase
         .from('shopping_items')
         .insert({
