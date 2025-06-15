@@ -21,6 +21,23 @@ const ShoppingList = () => {
   const completedCount = items.filter(item => item.completed).length;
   const totalCount = items.length;
 
+  // Group items by category
+  const groupedItems = items.reduce((groups, item) => {
+    const category = item.category || 'Uncategorized';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(item);
+    return groups;
+  }, {} as Record<string, typeof items>);
+
+  // Sort categories with "Uncategorized" last
+  const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
+    if (a === 'Uncategorized') return 1;
+    if (b === 'Uncategorized') return -1;
+    return a.localeCompare(b);
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
@@ -62,8 +79,8 @@ const ShoppingList = () => {
         {/* Add Item Form */}
         <AddItemForm onAddItem={addItem} />
 
-        {/* Shopping Items */}
-        <div className="space-y-3">
+        {/* Shopping Items Grouped by Category */}
+        <div className="space-y-6">
           {items.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -73,16 +90,28 @@ const ShoppingList = () => {
               <p className="text-gray-400">Add some items to get started!</p>
             </div>
           ) : (
-            items.map((item) => (
-              <ShoppingItem
-                key={item.id}
-                item={item}
-                onUpdate={updateItem}
-                onDelete={deleteItem}
-                draggedItem={draggedItem}
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
-              />
+            sortedCategories.map((category) => (
+              <div key={category} className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-gray-700">{category}</h2>
+                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    {groupedItems[category].length}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {groupedItems[category].map((item) => (
+                    <ShoppingItem
+                      key={item.id}
+                      item={item}
+                      onUpdate={updateItem}
+                      onDelete={deleteItem}
+                      draggedItem={draggedItem}
+                      onTouchStart={handleTouchStart}
+                      onTouchEnd={handleTouchEnd}
+                    />
+                  ))}
+                </div>
+              </div>
             ))
           )}
         </div>
@@ -96,11 +125,16 @@ const ShoppingList = () => {
                 {Math.round((completedCount / totalCount) * 100)}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
               <div 
                 className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${(completedCount / totalCount) * 100}%` }}
               ></div>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                Total items: <span className="font-medium">{totalCount}</span>
+              </p>
             </div>
           </div>
         )}
