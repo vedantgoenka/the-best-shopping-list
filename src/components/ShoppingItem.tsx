@@ -1,10 +1,12 @@
-
 import React, { useState } from 'react';
-import { Trash2, Edit3, Check, X } from 'lucide-react';
+import { Trash2, Edit3, Check, X, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 interface ShoppingItemData {
   id: string;
@@ -23,6 +25,15 @@ interface ShoppingItemProps {
   draggedItem?: string | null;
   onTouchStart?: (id: string) => void;
   onTouchEnd?: () => void;
+  items: Array<{
+    id: string;
+    text: string;
+    quantity: number;
+    completed: boolean;
+    category?: string | null;
+    notes?: string | null;
+    shop_name?: string | null;
+  }>;
 }
 
 const ShoppingItem: React.FC<ShoppingItemProps> = ({
@@ -31,13 +42,30 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
   onDelete,
   draggedItem = null,
   onTouchStart = () => {},
-  onTouchEnd = () => {}
+  onTouchEnd = () => {},
+  items
 }) => {
   const [editingItem, setEditingItem] = useState(false);
   const [editText, setEditText] = useState(item.text);
   const [editQuantity, setEditQuantity] = useState(item.quantity.toString());
   const [editNotes, setEditNotes] = useState(item.notes || '');
   const [editShopName, setEditShopName] = useState(item.shop_name || '');
+  const [editCategory, setEditCategory] = useState(item.category || '');
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
+
+  // Get unique categories and shops from existing items
+  const existingCategories = Array.from(new Set(
+    items
+      .map(item => item.category)
+      .filter(category => category && category.trim() !== '')
+  )).sort();
+
+  const existingShops = Array.from(new Set(
+    items
+      .map(item => item.shop_name)
+      .filter(shop => shop && shop.trim() !== '')
+  )).sort();
 
   const startEdit = () => {
     setEditingItem(true);
@@ -45,6 +73,7 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
     setEditQuantity(item.quantity.toString());
     setEditNotes(item.notes || '');
     setEditShopName(item.shop_name || '');
+    setEditCategory(item.category || '');
   };
 
   const saveEdit = async () => {
@@ -53,7 +82,8 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
         text: editText.trim(),
         quantity: parseInt(editQuantity) || 1,
         notes: editNotes.trim() || null,
-        shop_name: editShopName.trim() || null
+        shop_name: editShopName.trim() || null,
+        category: editCategory.trim() || null
       });
       
       if (success) {
@@ -68,6 +98,7 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
     setEditQuantity(item.quantity.toString());
     setEditNotes(item.notes || '');
     setEditShopName(item.shop_name || '');
+    setEditCategory(item.category || '');
   };
 
   const toggleItem = async () => {
@@ -133,14 +164,125 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
               <X className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
-          <Input
-            type="text"
-            placeholder="Shop name (optional)"
-            value={editShopName}
-            onChange={(e) => setEditShopName(e.target.value)}
-            onKeyPress={handleEditKeyPress}
-            className="text-xs sm:text-sm h-8 sm:h-10"
-          />
+
+          {/* Category Combobox */}
+          <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={categoryOpen}
+                className="w-full justify-between text-xs sm:text-sm h-8 sm:h-10 border-gray-200"
+              >
+                {editCategory || "Select or add category..."}
+                <ChevronsUpDown className="ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <CommandInput 
+                  placeholder="Search or add category..." 
+                  value={editCategory}
+                  onValueChange={setEditCategory}
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    <div className="p-2">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setCategoryOpen(false);
+                        }}
+                      >
+                        Add "{editCategory}"
+                      </Button>
+                    </div>
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {existingCategories.map((category) => (
+                      <CommandItem
+                        key={category}
+                        value={category}
+                        onSelect={(currentValue) => {
+                          setEditCategory(currentValue === editCategory ? "" : currentValue);
+                          setCategoryOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            editCategory === category ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {category}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          {/* Shop Combobox */}
+          <Popover open={shopOpen} onOpenChange={setShopOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={shopOpen}
+                className="w-full justify-between text-xs sm:text-sm h-8 sm:h-10 border-gray-200"
+              >
+                {editShopName || "Select or add shop..."}
+                <ChevronsUpDown className="ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <CommandInput 
+                  placeholder="Search or add shop..." 
+                  value={editShopName}
+                  onValueChange={setEditShopName}
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    <div className="p-2">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setShopOpen(false);
+                        }}
+                      >
+                        Add "{editShopName}"
+                      </Button>
+                    </div>
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {existingShops.map((shop) => (
+                      <CommandItem
+                        key={shop}
+                        value={shop}
+                        onSelect={(currentValue) => {
+                          setEditShopName(currentValue === editShopName ? "" : currentValue);
+                          setShopOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            editShopName === shop ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {shop}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
           <Textarea
             placeholder="Notes (optional)"
             value={editNotes}

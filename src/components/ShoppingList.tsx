@@ -158,6 +158,7 @@ const ShoppingList = () => {
                             item={item}
                             onUpdate={updateItem}
                             onDelete={deleteItem}
+                            items={items}
                           />
                         ))}
                       </div>
