@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Trash2, Edit3, Check, X, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -121,23 +120,23 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4 transition-all duration-300 transform hover:shadow-md ${
+      className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-4 transition-all duration-300 transform hover:shadow-md ${
         draggedItem === item.id ? 'scale-95 opacity-75' : 'scale-100 opacity-100'
       } ${item.completed ? 'bg-gray-50' : ''}`}
       onTouchStart={() => onTouchStart(item.id)}
       onTouchEnd={onTouchEnd}
     >
       {editingItem ? (
-        <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-12 sm:w-16">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-16 sm:w-16">
               <Input
                 type="number"
                 value={editQuantity}
                 onChange={(e) => setEditQuantity(e.target.value)}
                 onKeyPress={handleEditKeyPress}
                 min="1"
-                className="text-xs sm:text-sm h-8 sm:h-10"
+                className="text-sm h-10"
               />
             </div>
             <Input
@@ -145,24 +144,24 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
               onKeyPress={handleEditKeyPress}
-              className="flex-1 text-xs sm:text-sm h-8 sm:h-10"
+              className="flex-1 text-sm h-10"
               autoFocus
             />
             <Button
               variant="ghost"
               size="sm"
               onClick={saveEdit}
-              className="text-green-600 hover:text-green-700 hover:bg-green-50 p-1 sm:p-2"
+              className="text-green-600 hover:text-green-700 hover:bg-green-50 h-10 w-10 p-0"
             >
-              <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Check className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={cancelEdit}
-              className="text-gray-500 hover:text-gray-700 hover:bg-gray-50 p-1 sm:p-2"
+              className="text-gray-500 hover:text-gray-700 hover:bg-gray-50 h-10 w-10 p-0"
             >
-              <X className="h-3 w-3 sm:h-4 sm:w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
 
@@ -173,10 +172,10 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
                 variant="outline"
                 role="combobox"
                 aria-expanded={categoryOpen}
-                className="w-full justify-between text-xs sm:text-sm h-8 sm:h-10 border-gray-200"
+                className="w-full justify-between text-sm h-10 border-gray-200"
               >
                 {editCategory || "Select or add category..."}
-                <ChevronsUpDown className="ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-50" />
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
@@ -232,10 +231,10 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
                 variant="outline"
                 role="combobox"
                 aria-expanded={shopOpen}
-                className="w-full justify-between text-xs sm:text-sm h-8 sm:h-10 border-gray-200"
+                className="w-full justify-between text-sm h-10 border-gray-200"
               >
                 {editShopName || "Select or add shop..."}
-                <ChevronsUpDown className="ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-50" />
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
@@ -288,20 +287,20 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
             placeholder="Notes (optional)"
             value={editNotes}
             onChange={(e) => setEditNotes(e.target.value)}
-            className="text-xs sm:text-sm resize-none h-16 sm:h-20"
+            className="text-sm resize-none h-20"
             rows={2}
           />
         </div>
       ) : (
-        <div className="space-y-1 sm:space-y-2">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
             <Checkbox
               checked={item.completed}
               onCheckedChange={toggleItem}
-              className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 h-4 w-4 sm:h-5 sm:w-5"
+              className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 h-6 w-6 shrink-0"
             />
             <div 
-              className={`flex-1 cursor-pointer transition-all duration-200 text-sm sm:text-base ${
+              className={`flex-1 cursor-pointer transition-all duration-200 text-base min-h-[44px] flex items-center ${
                 item.completed 
                   ? 'text-gray-500 line-through' 
                   : 'text-gray-800'
@@ -317,29 +316,29 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
               variant="ghost"
               size="sm"
               onClick={startEdit}
-              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1 sm:p-2 opacity-60 hover:opacity-100"
+              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-10 w-10 p-0 shrink-0"
             >
-              <Edit3 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Edit3 className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleDeleteItem}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 sm:p-2 rounded-lg transition-colors duration-200"
+              className="text-red-500 hover:text-red-700 hover:bg-red-50 h-10 w-10 p-0 shrink-0 rounded-lg transition-colors duration-200"
             >
-              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Trash2 className="h-5 w-5" />
             </Button>
           </div>
           {item.shop_name && (
-            <div className="ml-6 sm:ml-8">
-              <div className="text-xs sm:text-sm text-blue-600 font-medium">
+            <div className="ml-9">
+              <div className="text-sm text-blue-600 font-medium">
                 🏪 {item.shop_name}
               </div>
             </div>
           )}
           {item.notes && (
-            <div className="ml-6 sm:ml-8">
-              <div className="text-xs sm:text-sm text-gray-600 italic">
+            <div className="ml-9">
+              <div className="text-sm text-gray-600 italic">
                 {item.notes}
               </div>
             </div>
