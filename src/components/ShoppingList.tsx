@@ -9,6 +9,7 @@ import DragDropList from './DragDropList';
 import SortableShoppingItem from './SortableShoppingItem';
 import CategoryDeleteDialog from './CategoryDeleteDialog';
 import Header from './Header';
+import ProgressBanner from './ProgressBanner';
 
 const ShoppingList = () => {
   const { items, loading, addItem, updateItem, deleteItem, deleteCategoryWithItems, reorderItems } = useShoppingItems();
@@ -94,33 +95,13 @@ const ShoppingList = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Header />
+      <ProgressBanner 
+        totalItems={totalItems}
+        completedItems={completedItems}
+        progressPercentage={progressPercentage}
+      />
       
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Progress Overview */}
-        <div className="text-center mb-8">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Your Shopping Progress</h2>
-            {totalItems === 0 ? (
-              <p className="text-gray-600 text-lg">Your list is empty - time to add some items!</p>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-gray-600 text-lg">
-                  {completedItems} of {totalItems} items completed
-                </p>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
-                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${progressPercentage}%` }}
-                  />
-                </div>
-                <p className="text-sm text-gray-500">
-                  {Math.round(progressPercentage)}% complete
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
         <div className="max-w-full mx-auto space-y-6">
           <SearchAndAddItem
             items={items}

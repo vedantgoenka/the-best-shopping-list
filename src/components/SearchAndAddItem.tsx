@@ -1,20 +1,12 @@
-
 import React, { useState, useMemo } from 'react';
 import { Search, Plus, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import ImportItemsDialog from './ImportItemsDialog';
+import { ShoppingItem } from '@/types/shoppingItem';
 
 interface SearchAndAddItemProps {
-  items: Array<{
-    id: string;
-    text: string;
-    quantity: number;
-    completed: boolean;
-    category?: string | null;
-    notes?: string | null;
-    shop_name?: string | null;
-  }>;
+  items: ShoppingItem[];
   onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => Promise<boolean>;
   onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
   onSearchChange: (searchTerm: string) => void;
