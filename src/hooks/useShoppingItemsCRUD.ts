@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useCallback } from 'react';
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
@@ -102,7 +101,13 @@ export const useShoppingItemsCRUD = (
         }
       }
 
-      const orderIndex = specificOrderIndex !== undefined ? specificOrderIndex : (getMaxOrderIndex(currentItems) + 1);
+      // For new items, use a lower order index to place them at the top
+      // Get the minimum order index and subtract 1 to place at top
+      const getMinOrderIndex = (items: ShoppingItem[]): number => {
+        return items.length > 0 ? Math.min(...items.map(item => item.order_index)) : 0;
+      };
+
+      const orderIndex = specificOrderIndex !== undefined ? specificOrderIndex : (getMinOrderIndex(currentItems) - 1);
       
       const newItem = await shoppingItemsService.createItem({
         text,
