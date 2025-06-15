@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
@@ -37,6 +36,7 @@ const ShoppingList = () => {
     return (localStorage.getItem('shoppingListGroupBy') as 'category' | 'shop') || 'category';
   });
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [isManuallyReordering, setIsManuallyReordering] = useState(false);
 
   // Drag and drop sensors with better configuration
   const sensors = useSensors(
@@ -62,6 +62,11 @@ const ShoppingList = () => {
   }, [items, searchTerm, showCompleted]);
 
   const sortedItems = useMemo(() => {
+    // If we're manually reordering, don't apply automatic sorting
+    if (isManuallyReordering) {
+      return filteredItems;
+    }
+
     const sorted = [...filteredItems].sort((a, b) => {
       let compareValue = 0;
       
@@ -89,7 +94,7 @@ const ShoppingList = () => {
     });
     
     return sorted;
-  }, [filteredItems, sortBy, sortOrder]);
+  }, [filteredItems, sortBy, sortOrder, isManuallyReordering]);
 
   const allItemsProgressData = useMemo(() => {
     const groups: { [key: string]: { items: typeof items, completedCount: number, totalCount: number, progressPercentage: number } } = {};
@@ -174,12 +179,15 @@ const ShoppingList = () => {
     localStorage.setItem('shoppingListGroupBy', newGroupBy);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     console.log('Drag end:', { active: active.id, over: over?.id });
 
     if (over && active.id !== over.id) {
+      // Set manual reordering flag to prevent automatic sorting
+      setIsManuallyReordering(true);
+      
       // Find the global indices in the sortedItems array
       const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
       const newIndex = sortedItems.findIndex((item) => item.id === over.id);
@@ -188,7 +196,12 @@ const ShoppingList = () => {
 
       if (oldIndex !== -1 && newIndex !== -1) {
         const reorderedItems = arrayMove(sortedItems, oldIndex, newIndex);
-        reorderItems(reorderedItems);
+        await reorderItems(reorderedItems);
+        
+        // Reset manual reordering flag after a short delay
+        setTimeout(() => {
+          setIsManuallyReordering(false);
+        }, 1000);
       }
     }
   };
@@ -198,6 +211,9 @@ const ShoppingList = () => {
   };
 
   const handleSortChange = (newSortBy: typeof sortBy) => {
+    // Reset manual reordering when user changes sort
+    setIsManuallyReordering(false);
+    
     if (newSortBy === sortBy) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
