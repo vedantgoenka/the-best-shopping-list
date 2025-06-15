@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import {
   DragEndEvent,
@@ -6,9 +5,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  sortableKeyboardCoordinates,
 } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
+import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { ShoppingItem } from '@/types/shoppingItem';
 
 interface UseDragAndDropProps {
