@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Edit3, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -9,28 +9,64 @@ import { toast } from '@/hooks/use-toast';
 interface ShoppingItem {
   id: string;
   text: string;
+  quantity: number;
   completed: boolean;
 }
 
 const ShoppingList = () => {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const [quantityValue, setQuantityValue] = useState('1');
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editQuantity, setEditQuantity] = useState('1');
 
   const addItem = () => {
     if (inputValue.trim()) {
       const newItem: ShoppingItem = {
         id: Date.now().toString(),
         text: inputValue.trim(),
+        quantity: parseInt(quantityValue) || 1,
         completed: false,
       };
       setItems([...items, newItem]);
       setInputValue('');
+      setQuantityValue('1');
       toast({
         title: "Item added!",
-        description: `"${newItem.text}" was added to your shopping list.`,
+        description: `"${newItem.quantity}x ${newItem.text}" was added to your shopping list.`,
       });
     }
+  };
+
+  const startEdit = (item: ShoppingItem) => {
+    setEditingItem(item.id);
+    setEditText(item.text);
+    setEditQuantity(item.quantity.toString());
+  };
+
+  const saveEdit = () => {
+    if (editText.trim() && editingItem) {
+      setItems(items.map(item => 
+        item.id === editingItem 
+          ? { ...item, text: editText.trim(), quantity: parseInt(editQuantity) || 1 }
+          : item
+      ));
+      setEditingItem(null);
+      setEditText('');
+      setEditQuantity('1');
+      toast({
+        title: "Item updated!",
+        description: "Your item has been successfully updated.",
+      });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingItem(null);
+    setEditText('');
+    setEditQuantity('1');
   };
 
   const toggleItem = (id: string) => {
@@ -45,7 +81,7 @@ const ShoppingList = () => {
     if (itemToDelete) {
       toast({
         title: "Item removed",
-        description: `"${itemToDelete.text}" was removed from your list.`,
+        description: `"${itemToDelete.quantity}x ${itemToDelete.text}" was removed from your list.`,
       });
     }
   };
@@ -53,6 +89,14 @@ const ShoppingList = () => {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       addItem();
+    }
+  };
+
+  const handleEditKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      cancelEdit();
     }
   };
 
@@ -83,7 +127,17 @@ const ShoppingList = () => {
 
         {/* Add Item Section */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
-          <div className="flex gap-3">
+          <div className="flex gap-3 mb-3">
+            <div className="w-20">
+              <Input
+                type="number"
+                placeholder="Qty"
+                value={quantityValue}
+                onChange={(e) => setQuantityValue(e.target.value)}
+                min="1"
+                className="border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+              />
+            </div>
             <Input
               type="text"
               placeholder="Add a new item..."
@@ -99,6 +153,7 @@ const ShoppingList = () => {
               <Plus className="h-5 w-5" />
             </Button>
           </div>
+          <p className="text-xs text-gray-500">Click on any item to edit it</p>
         </div>
 
         {/* Shopping Items */}
@@ -121,30 +176,78 @@ const ShoppingList = () => {
                 onTouchStart={() => handleTouchStart(item.id)}
                 onTouchEnd={handleTouchEnd}
               >
-                <div className="flex items-center gap-3">
-                  <Checkbox
-                    checked={item.completed}
-                    onCheckedChange={() => toggleItem(item.id)}
-                    className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                  />
-                  <span 
-                    className={`flex-1 transition-all duration-200 ${
-                      item.completed 
-                        ? 'text-gray-500 line-through' 
-                        : 'text-gray-800'
-                    }`}
-                  >
-                    {item.text}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteItem(item.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors duration-200"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {editingItem === item.id ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-16">
+                      <Input
+                        type="number"
+                        value={editQuantity}
+                        onChange={(e) => setEditQuantity(e.target.value)}
+                        onKeyPress={handleEditKeyPress}
+                        min="1"
+                        className="text-sm"
+                      />
+                    </div>
+                    <Input
+                      type="text"
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onKeyPress={handleEditKeyPress}
+                      className="flex-1"
+                      autoFocus
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={saveEdit}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50 p-2"
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={cancelEdit}
+                      className="text-gray-500 hover:text-gray-700 hover:bg-gray-50 p-2"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={item.completed}
+                      onCheckedChange={() => toggleItem(item.id)}
+                      className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                    />
+                    <div 
+                      className={`flex-1 cursor-pointer transition-all duration-200 ${
+                        item.completed 
+                          ? 'text-gray-500 line-through' 
+                          : 'text-gray-800'
+                      }`}
+                      onClick={() => startEdit(item)}
+                    >
+                      <span className="font-medium text-blue-600">{item.quantity}x</span> {item.text}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startEdit(item)}
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2 opacity-60 hover:opacity-100"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteItem(item.id)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors duration-200"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             ))
           )}
