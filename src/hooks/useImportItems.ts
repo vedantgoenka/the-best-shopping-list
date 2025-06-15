@@ -12,6 +12,14 @@ interface UseImportItemsProps {
 export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItemsProps) => {
   const [isImporting, setIsImporting] = useState(false);
 
+  const findMatchingItem = (parsedItem: ParsedItem) => {
+    return items.find(item => 
+      item.text.toLowerCase() === parsedItem.text.toLowerCase() &&
+      item.quantity === parsedItem.quantity &&
+      item.category === parsedItem.category
+    );
+  };
+
   const importItems = async (importText: string) => {
     if (!importText.trim()) {
       toast({
@@ -36,38 +44,44 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
       }
 
       let addedCount = 0;
+      let completedCount = 0;
 
-      // Import each item individually
+      // Process items sequentially to maintain proper state
       for (const item of parsedItems) {
         const success = await onAddItem(item.text, item.quantity, item.category);
         
         if (success) {
           addedCount++;
           
-          // If the item should be completed, we need to wait a bit and then find it
+          // If item should be completed, find and update it immediately
           if (item.completed) {
-            // Wait a short moment for the state to update
-            setTimeout(async () => {
-              // Get fresh items list - find the most recently added item that matches
-              const addedItem = items
-                .filter(existingItem => 
-                  existingItem.text.toLowerCase() === item.text.toLowerCase() &&
-                  existingItem.quantity === item.quantity &&
-                  existingItem.category === item.category
-                )
-                .sort((a, b) => b.id.localeCompare(a.id))[0]; // Get the most recent one
-              
-              if (addedItem) {
-                await onUpdateItem(addedItem.id, { completed: true });
+            // Get the updated items list to find the newly added item
+            const currentItems = [...items];
+            
+            // Find the matching item (it should be the most recently added one)
+            const matchingItem = currentItems
+              .filter(existingItem => 
+                existingItem.text.toLowerCase() === item.text.toLowerCase() &&
+                existingItem.quantity === item.quantity &&
+                existingItem.category === item.category
+              )
+              .sort((a, b) => b.id.localeCompare(a.id))[0]; // Get the most recent one
+            
+            if (matchingItem) {
+              const updateSuccess = await onUpdateItem(matchingItem.id, { completed: true });
+              if (updateSuccess) {
+                completedCount++;
               }
-            }, 100);
+            }
           }
         }
       }
       
+      const completedMessage = completedCount > 0 ? ` ${completedCount} items marked as completed.` : '';
+      
       toast({
         title: "Items imported successfully!",
-        description: `${addedCount} items have been added to your shopping list.${parsedItems.filter(item => item.completed).length > 0 ? ` Completed items will be marked automatically.` : ''}`,
+        description: `${addedCount} items have been added to your shopping list.${completedMessage}`,
       });
       
       return true;
