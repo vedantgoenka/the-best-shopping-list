@@ -1,7 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
-import { ShoppingBag, Filter, ArrowUpDown } from 'lucide-react';
+import { ShoppingBag, Filter, ArrowUpDown, Grid3X3, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useShoppingItems } from '@/hooks/useShoppingItems';
 import SearchAndAddItem from './SearchAndAddItem';
-import GroupingToggle from './GroupingToggle';
 import ImportItemsDialog from './ImportItemsDialog';
 import DragDropList from './DragDropList';
 import SortableShoppingItem from './SortableShoppingItem';
@@ -125,6 +124,10 @@ const ShoppingList = () => {
     }
   };
 
+  const handleToggleChange = (checked: boolean) => {
+    handleGroupChange(checked ? 'shop' : 'category');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
@@ -157,15 +160,30 @@ const ShoppingList = () => {
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
             <div className="p-6 border-b border-gray-100 bg-white/50">
               <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <GroupingToggle groupBy={groupBy} onGroupChange={handleGroupChange} />
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Grid3X3 className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">Category</span>
+                  </div>
+                  
+                  <Switch
+                    checked={groupBy === 'shop'}
+                    onCheckedChange={handleToggleChange}
+                    className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
+                  />
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700">Shop</span>
+                    <Store className="h-4 w-4 text-gray-600" />
+                  </div>
                 </div>
+                
                 <div className="flex gap-2">
                   <Button
                     variant={showCompleted ? "default" : "outline"}
                     size="icon"
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="h-14 w-14"
+                    className="h-10 w-10"
                     title={showCompleted ? 'Hide completed items' : 'Show completed items'}
                   >
                     <Filter className="h-4 w-4" />
@@ -176,7 +194,7 @@ const ShoppingList = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-14 w-14"
+                        className="h-10 w-10"
                         title="Sort options"
                       >
                         <ArrowUpDown className="h-4 w-4" />
