@@ -104,14 +104,16 @@ const ShoppingList = () => {
           
           <div className="bg-white rounded-xl shadow-lg mb-6 border border-gray-100">
             <div className="p-6 border-b border-gray-100">
-              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-                <GroupingToggle groupBy={groupBy} onGroupChange={handleGroupChange} />
-                <div className="flex gap-3 items-center">
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+                <div className="flex-1">
+                  <GroupingToggle groupBy={groupBy} onGroupChange={handleGroupChange} />
+                </div>
+                <div className="flex gap-3 items-center justify-center sm:justify-end">
                   <Button
                     variant={showCompleted ? "default" : "outline"}
                     size="sm"
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap h-9"
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     {showCompleted ? 'Hide' : 'Show'} Completed
