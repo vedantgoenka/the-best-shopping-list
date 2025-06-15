@@ -45,7 +45,7 @@ export const useShoppingItemsCRUD = (
             if (a.completed !== b.completed) {
               return a.completed ? 1 : -1;
             }
-            return a.order_index - b.order_index;
+            return b.order_index - a.order_index; // Reverse order (highest first)
           });
         }
         
@@ -101,13 +101,8 @@ export const useShoppingItemsCRUD = (
         }
       }
 
-      // For new items, use a lower order index to place them at the top
-      // Get the minimum order index and subtract 1 to place at top
-      const getMinOrderIndex = (items: ShoppingItem[]): number => {
-        return items.length > 0 ? Math.min(...items.map(item => item.order_index)) : 0;
-      };
-
-      const orderIndex = specificOrderIndex !== undefined ? specificOrderIndex : (getMinOrderIndex(currentItems) - 1);
+      // For new items, add to the bottom with highest order index
+      const orderIndex = specificOrderIndex !== undefined ? specificOrderIndex : (getMaxOrderIndex(currentItems) + 1);
       
       const newItem = await shoppingItemsService.createItem({
         text,
@@ -126,7 +121,7 @@ export const useShoppingItemsCRUD = (
             if (a.completed !== b.completed) {
               return a.completed ? 1 : -1;
             }
-            return a.order_index - b.order_index;
+            return b.order_index - a.order_index; // Reverse order (highest first)
           });
         });
       } else {

@@ -42,7 +42,8 @@ export const useShoppingListFilters = ({
       
       switch (sortBy) {
         case 'manual':
-          compareValue = a.order_index - b.order_index;
+          // Reverse order by default (highest order_index first, which shows newest items first)
+          compareValue = b.order_index - a.order_index;
           break;
         case 'name':
           compareValue = a.text.localeCompare(b.text);
@@ -63,7 +64,13 @@ export const useShoppingListFilters = ({
           compareValue = 0;
       }
       
-      return sortOrder === 'asc' ? compareValue : -compareValue;
+      // For manual sorting, we already applied reverse order above
+      // For other sorts, apply the sortOrder
+      if (sortBy === 'manual') {
+        return compareValue;
+      } else {
+        return sortOrder === 'asc' ? compareValue : -compareValue;
+      }
     });
     
     return sorted;
