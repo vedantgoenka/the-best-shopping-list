@@ -1,12 +1,6 @@
 
 import { ShoppingItem } from '@/types/shoppingItem';
 
-export const findExistingItem = (items: ShoppingItem[], text: string): ShoppingItem | undefined => {
-  return items.find(item => 
-    item.text.toLowerCase() === text.trim().toLowerCase()
-  );
-};
-
 export const getMaxOrderIndex = (items: ShoppingItem[]): number => {
   return items.length > 0 ? Math.max(...items.map(item => item.order_index)) : -1;
 };

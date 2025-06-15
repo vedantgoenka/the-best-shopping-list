@@ -1,10 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
 import { 
-  findExistingItem, 
   getMaxOrderIndex, 
   createItemUpdates, 
   getUpdateDetailsMessage, 
@@ -76,7 +74,10 @@ export const useShoppingItems = () => {
 
   const addItem = async (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => {
     try {
-      const existingItem = findExistingItem(items, text);
+      // Check for existing item in current state (only among non-deleted items)
+      const existingItem = items.find(item => 
+        item.text.toLowerCase() === text.trim().toLowerCase()
+      );
 
       if (existingItem) {
         const updates = createItemUpdates(existingItem, quantity, category, notes, shopName);
@@ -100,6 +101,7 @@ export const useShoppingItems = () => {
         }
       }
 
+      // Item doesn't exist in current state, create new one
       const maxOrderIndex = getMaxOrderIndex(items);
       const newItem = await shoppingItemsService.createItem({
         text,
