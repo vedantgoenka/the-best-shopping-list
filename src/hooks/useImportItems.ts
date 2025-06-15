@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
@@ -53,7 +52,7 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
     setIsImporting(true);
 
     try {
-      // Step 1: Lowercase list of existing item texts (for duplicate detection)
+      // Step 1: Lowercase set of existing item texts (for duplicate detection)
       const existingTexts = new Set(items.map(item => item.text.trim().toLowerCase()));
 
       // Step 2: Split parsed items into new and duplicate
@@ -68,14 +67,14 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
         }
       });
 
-      // Step 3: Calculate order indices for new unique items only
-      const startOrderIndex = getMaxOrderIndex(items) + 1;
+      // Step 3: Calculate all order indices for unique items *before* adding any
+      let startOrderIndex = getMaxOrderIndex(items) + 1;
       const itemsToImport: ItemToImport[] = uniqueToImport.map((item, idx) => ({
         ...item,
         orderIndex: startOrderIndex + idx,
       }));
 
-      // Step 4: Add new items SEQUENTIALLY (and in original order)
+      // Step 4: Sequentially add new items WITH their assigned order indices
       let addedCount = 0;
       let completedInBatch = 0;
       for (const item of itemsToImport) {
@@ -86,7 +85,7 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
           undefined, // notes
           undefined, // shopName
           item.completed,
-          true,
+          true, // maintainOrder
           item.orderIndex
         );
         if (success) {
@@ -95,13 +94,15 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
         }
       }
 
-      // Step 5: For duplicates, optionally update them if completed (since user may want to mark done)
+      // Step 5: For duplicates, update to completed if needed
       let updatedDuplicates = 0;
       let completedUpdated = 0;
       for (const item of duplicates) {
         if (item.completed) {
           // Find the matching item's id
-          const match = items.find(i => i.text.trim().toLowerCase() === item.text.trim().toLowerCase());
+          const match = items.find(
+            i => i.text.trim().toLowerCase() === item.text.trim().toLowerCase()
+          );
           if (match && !match.completed) {
             // Only update if not already completed
             // Assume user's onAddItem handles this as an update
