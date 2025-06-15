@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Import, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 
 interface ImportItemsDialogProps {
-  onImportItems: (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => Promise<boolean>;
+  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => Promise<boolean>;
 }
 
 interface ParsedItem {
@@ -17,7 +16,7 @@ interface ParsedItem {
 }
 
 const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
-  onImportItems,
+  onAddItem,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [importText, setImportText] = useState('');
@@ -107,7 +106,7 @@ const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
 
       // Import each item individually
       for (const item of parsedItems) {
-        await onImportItems(item.text, item.quantity, item.category);
+        await onAddItem(item.text, item.quantity, item.category);
       }
       
       toast({

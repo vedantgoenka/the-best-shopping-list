@@ -4,16 +4,16 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Grid3X3, Store } from 'lucide-react';
 
 interface GroupingToggleProps {
-  currentGroup: 'category' | 'shop';
+  groupBy: 'category' | 'shop';
   onGroupChange: (value: 'category' | 'shop') => void;
 }
 
-const GroupingToggle: React.FC<GroupingToggleProps> = ({ currentGroup, onGroupChange }) => {
+const GroupingToggle: React.FC<GroupingToggleProps> = ({ groupBy, onGroupChange }) => {
   return (
     <div className="flex justify-center mb-4 sm:mb-6">
       <ToggleGroup 
         type="single" 
-        value={currentGroup} 
+        value={groupBy} 
         onValueChange={(value) => {
           if (value) {
             onGroupChange(value as 'category' | 'shop');
