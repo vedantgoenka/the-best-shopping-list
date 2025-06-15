@@ -1,14 +1,15 @@
-
 import React, { useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Import } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useShoppingItems } from '@/hooks/useShoppingItems';
 import AddItemForm from './AddItemForm';
 import ShoppingItem from './ShoppingItem';
+import ImportItemsDialog from './ImportItemsDialog';
 
 const ShoppingList = () => {
   const { items, loading, addItem, updateItem, deleteItem, refetch } = useShoppingItems();
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const handleTouchStart = (id: string) => {
     setDraggedItem(id);
@@ -16,6 +17,59 @@ const ShoppingList = () => {
 
   const handleTouchEnd = () => {
     setDraggedItem(null);
+  };
+
+  const handleImportItems = async (importedItems: Array<{
+    text: string;
+    quantity: number;
+    completed: boolean;
+    category?: string;
+  }>) => {
+    // Check for duplicates and handle them gracefully
+    const existingItemTexts = new Set(items.map(item => item.text.toLowerCase()));
+    const duplicates: string[] = [];
+    const newItems: typeof importedItems = [];
+
+    for (const item of importedItems) {
+      if (existingItemTexts.has(item.text.toLowerCase())) {
+        duplicates.push(item.text);
+      } else {
+        newItems.push(item);
+        existingItemTexts.add(item.text.toLowerCase());
+      }
+    }
+
+    // Add all new items
+    const addPromises = newItems.map(item => 
+      addItem(item.text, item.quantity, item.category, undefined)
+    );
+    
+    await Promise.all(addPromises);
+
+    // Update completion status for items that were marked as completed in import
+    const completedItems = newItems.filter(item => item.completed);
+    if (completedItems.length > 0) {
+      // We need to find the newly added items and mark them as completed
+      // This is a bit tricky since we need to wait for the items to be added first
+      setTimeout(async () => {
+        const updatedItems = await refetch();
+        const updatePromises = completedItems.map(importedItem => {
+          const foundItem = items.find(item => 
+            item.text.toLowerCase() === importedItem.text.toLowerCase() && 
+            !item.completed
+          );
+          if (foundItem) {
+            return updateItem(foundItem.id, { completed: true });
+          }
+        }).filter(Boolean);
+        
+        await Promise.all(updatePromises);
+      }, 1000);
+    }
+
+    if (duplicates.length > 0) {
+      console.log(`Skipped ${duplicates.length} duplicate items:`, duplicates);
+    }
   };
 
   const completedCount = items.filter(item => item.completed).length;
@@ -66,6 +120,14 @@ const ShoppingList = () => {
               className="text-gray-500 hover:text-gray-700"
             >
               <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsImportDialogOpen(true)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <Import className="h-4 w-4" />
             </Button>
           </div>
           <p className="text-gray-600">
@@ -138,6 +200,13 @@ const ShoppingList = () => {
             </div>
           </div>
         )}
+
+        {/* Import Dialog */}
+        <ImportItemsDialog
+          isOpen={isImportDialogOpen}
+          onClose={() => setIsImportDialogOpen(false)}
+          onImport={handleImportItems}
+        />
       </div>
     </div>
   );
