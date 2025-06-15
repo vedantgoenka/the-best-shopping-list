@@ -128,7 +128,11 @@ const ShoppingList = () => {
                     <Filter className="h-4 w-4 mr-2" />
                     {showCompleted ? 'Hide' : 'Show'} Completed
                   </Button>
-                  <ImportItemsDialog onAddItem={addItem} />
+                  <ImportItemsDialog 
+                    onAddItem={addItem} 
+                    onUpdateItem={updateItem}
+                    items={items}
+                  />
                 </div>
               </div>
             </div>
