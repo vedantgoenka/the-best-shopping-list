@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Search, Plus, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -8,7 +7,7 @@ import { ShoppingItem } from '@/types/shoppingItem';
 
 interface SearchAndAddItemProps {
   items: ShoppingItem[];
-  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => Promise<boolean>;
+  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder?: boolean, specificOrderIndex?: number) => Promise<boolean>;
   onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
   onSearchChange: (searchTerm: string) => void;
   searchTerm: string;
@@ -129,7 +128,6 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
             
             <ImportItemsDialog 
               onAddItem={onAddItem} 
-              onUpdateItem={onUpdateItem}
               items={items}
             />
             
