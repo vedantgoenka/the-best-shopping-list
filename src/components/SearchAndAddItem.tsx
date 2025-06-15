@@ -29,7 +29,7 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [category, setCategory] = useState<string>('');
   const [shopName, setShopName] = useState<string>('');
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantityInput, setQuantityInput] = useState<string>('1');
 
   // Check if the exact item already exists (case-insensitive)
   const exactItemExists = useMemo(() => {
@@ -61,6 +61,8 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
   const handleAddItem = async () => {
     if (!searchTerm.trim()) return;
     
+    const quantity = parseInt(quantityInput) || 1;
+    
     setIsAdding(true);
     const success = await onAddItem(
       searchTerm.trim(), 
@@ -74,7 +76,7 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
       onSearchChange(''); // Clear the search input
       setCategory(''); // Clear category
       setShopName(''); // Clear shop
-      setQuantity(1); // Reset quantity
+      setQuantityInput('1'); // Reset quantity
     }
     setIsAdding(false);
   };
@@ -83,6 +85,14 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
     if (e.key === 'Enter' && searchTerm.trim() && !exactItemExists) {
       e.preventDefault();
       handleAddItem();
+    }
+  };
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty string for editing, but ensure minimum of 1 when not empty
+    if (value === '' || (parseInt(value) > 0)) {
+      setQuantityInput(value);
     }
   };
 
@@ -156,9 +166,10 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
               <Input
                 type="number"
                 min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                value={quantityInput}
+                onChange={handleQuantityChange}
                 className="w-full"
+                placeholder="1"
               />
             </div>
           </div>

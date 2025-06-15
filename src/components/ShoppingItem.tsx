@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Trash2, Edit3, Check, X, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -307,10 +308,10 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
               }`}
               onClick={startEdit}
             >
-              {item.quantity > 1 && (
-                <span className="font-medium text-blue-600">{item.quantity}x </span>
-              )}
               {item.text}
+              {item.quantity > 1 && (
+                <span className="font-medium text-blue-600"> x{item.quantity}</span>
+              )}
             </div>
             <Button
               variant="ghost"

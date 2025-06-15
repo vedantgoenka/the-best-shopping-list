@@ -57,5 +57,5 @@ export const getUpdateDetailsMessage = (updates: Record<string, any>): string =>
 };
 
 export const getQuantityText = (quantity: number): string => {
-  return quantity === 1 ? '' : `${quantity}x `;
+  return quantity === 1 ? '' : ` x${quantity}`;
 };
