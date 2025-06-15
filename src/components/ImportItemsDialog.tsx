@@ -4,11 +4,12 @@ import { Import } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useImportItems } from '@/hooks/useImportItems';
 import ImportDialogContent from './ImportDialogContent';
+import { ShoppingItem } from '@/types/shoppingItem';
 
 interface ImportItemsDialogProps {
   onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder?: boolean, specificOrderIndex?: number) => Promise<boolean>;
   onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
-  items: Array<{ id: string; text: string; quantity: number; category?: string | null }>;
+  items: ShoppingItem[];
 }
 
 const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({

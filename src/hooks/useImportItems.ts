@@ -3,11 +3,12 @@ import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
 import { getMaxOrderIndex } from '@/utils/shoppingItemUtils';
+import { ShoppingItem } from '@/types/shoppingItem';
 
 interface UseImportItemsProps {
-  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder?: boolean) => Promise<boolean>;
+  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean, maintainOrder?: boolean, specificOrderIndex?: number) => Promise<boolean>;
   onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
-  items: Array<{ id: string; text: string; quantity: number; category?: string | null }>;
+  items: ShoppingItem[];
 }
 
 export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItemsProps) => {
