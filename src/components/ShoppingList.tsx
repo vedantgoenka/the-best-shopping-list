@@ -2,6 +2,7 @@
 import React from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { useShoppingItems } from '@/hooks/useShoppingItems';
+import { useShoppingLists } from '@/hooks/useShoppingLists';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { useShoppingListState } from '@/hooks/useShoppingListState';
 import { useShoppingListFilters } from '@/hooks/useShoppingListFilters';
@@ -13,7 +14,10 @@ import SortControls from './SortControls';
 import ShoppingListContent from './ShoppingListContent';
 
 const ShoppingList = () => {
-  const { items, loading, addItem, updateItem, deleteItem, deleteCategoryWithItems, reorderItems } = useShoppingItems();
+  const { currentList, loading: listsLoading } = useShoppingLists();
+  const { items, loading: itemsLoading, addItem, updateItem, deleteItem, deleteCategoryWithItems, reorderItems } = useShoppingItems({ 
+    currentListId: currentList?.id 
+  });
   
   const {
     searchTerm,
@@ -63,12 +67,29 @@ const ShoppingList = () => {
     handleSortChange(newSortBy, resetManualReordering);
   };
 
+  const loading = listsLoading || itemsLoading;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
           <ShoppingBag className="h-16 w-16 text-blue-500 mx-auto mb-6 animate-pulse" />
           <p className="text-gray-600 text-lg font-medium">Loading your shopping list...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no current list is selected
+  if (!currentList) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Header />
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <ShoppingBag className="h-16 w-16 text-gray-400 mx-auto mb-6" />
+            <p className="text-gray-600 text-lg font-medium">No shopping list selected</p>
+          </div>
         </div>
       </div>
     );

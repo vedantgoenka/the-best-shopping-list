@@ -40,6 +40,7 @@ export type Database = {
           order_index: number
           quantity: number
           shop_name: string | null
+          shopping_list_id: string | null
           text: string
           updated_at: string
           user_id: string
@@ -53,6 +54,7 @@ export type Database = {
           order_index?: number
           quantity?: number
           shop_name?: string | null
+          shopping_list_id?: string | null
           text: string
           updated_at?: string
           user_id: string
@@ -66,7 +68,40 @@ export type Database = {
           order_index?: number
           quantity?: number
           shop_name?: string | null
+          shopping_list_id?: string | null
           text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_items_shopping_list_id_fkey"
+            columns: ["shopping_list_id"]
+            isOneToOne: false
+            referencedRelation: "shopping_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopping_lists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
           updated_at?: string
           user_id?: string
         }

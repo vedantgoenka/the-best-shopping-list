@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
@@ -16,6 +15,7 @@ interface UseShoppingItemOperationsProps {
   updateItem: (id: string, updates: Partial<ShoppingItem>) => void;
   removeItem: (id: string) => void;
   removeItemsByCategory: (categoryName: string) => void;
+  currentListId?: string | null;
 }
 
 export const useShoppingItemOperations = ({
@@ -25,6 +25,7 @@ export const useShoppingItemOperations = ({
   updateItem,
   removeItem,
   removeItemsByCategory,
+  currentListId,
 }: UseShoppingItemOperationsProps) => {
   const {
     showItemAdded,
@@ -102,6 +103,7 @@ export const useShoppingItemOperations = ({
         shop_name: shopName,
         order_index: orderIndex,
         completed: completed || false,
+        shopping_list_id: currentListId,
       });
 
       addItem(newItem, maintainOrder);
@@ -112,7 +114,7 @@ export const useShoppingItemOperations = ({
       showAddError();
       return false;
     }
-  }, [itemsRef, updateItemInDb, addItem, showItemAdded, showItemExists, showItemExistsUpdated, showAddError]);
+  }, [itemsRef, updateItemInDb, addItem, showItemAdded, showItemExists, showItemExistsUpdated, showAddError, currentListId]);
 
   const deleteItemFromDb = useCallback(async (id: string) => {
     try {

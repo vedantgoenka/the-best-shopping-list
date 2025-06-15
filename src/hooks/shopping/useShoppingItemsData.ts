@@ -4,7 +4,11 @@ import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
 import { useShoppingItemsToast } from '@/hooks/useShoppingItemsToast';
 
-export const useShoppingItemsData = () => {
+interface UseShoppingItemsDataProps {
+  currentListId?: string | null;
+}
+
+export const useShoppingItemsData = ({ currentListId }: UseShoppingItemsDataProps = {}) => {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { showLoadError } = useShoppingItemsToast();
@@ -12,7 +16,16 @@ export const useShoppingItemsData = () => {
   const loadItems = async () => {
     try {
       setLoading(true);
-      const data = await shoppingItemsService.fetchItems();
+      let data: ShoppingItem[];
+      
+      if (currentListId) {
+        // Fetch items for specific list
+        data = await (shoppingItemsService as any).fetchItemsByList(currentListId);
+      } else {
+        // Fetch all items (backward compatibility)
+        data = await shoppingItemsService.fetchItems();
+      }
+      
       setItems(data);
     } catch (error) {
       console.error('Unexpected error loading items:', error);
@@ -24,7 +37,7 @@ export const useShoppingItemsData = () => {
 
   useEffect(() => {
     loadItems();
-  }, []);
+  }, [currentListId]);
 
   return {
     items,

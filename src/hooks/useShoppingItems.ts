@@ -5,8 +5,12 @@ import { useShoppingItemsState } from './shopping/useShoppingItemsState';
 import { useShoppingItemOperations } from './shopping/useShoppingItemOperations';
 import { useShoppingItemsReorderLogic } from './shopping/useShoppingItemsReorderLogic';
 
-export const useShoppingItems = () => {
-  const { items: initialItems, loading, refetch } = useShoppingItemsData();
+interface UseShoppingItemsProps {
+  currentListId?: string | null;
+}
+
+export const useShoppingItems = ({ currentListId }: UseShoppingItemsProps = {}) => {
+  const { items: initialItems, loading, refetch } = useShoppingItemsData({ currentListId });
   
   const {
     items,
@@ -31,6 +35,7 @@ export const useShoppingItems = () => {
     updateItem: updateItemInState,
     removeItem,
     removeItemsByCategory,
+    currentListId,
   });
   
   const { reorderItems } = useShoppingItemsReorderLogic(

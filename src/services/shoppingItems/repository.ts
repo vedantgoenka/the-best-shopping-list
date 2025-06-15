@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ShoppingItem } from '@/types/shoppingItem';
 import { CreateShoppingItemData, UpdateShoppingItemData, ShoppingItemsRepository } from './types';
@@ -13,6 +12,22 @@ export class SupabaseShoppingItemsRepository implements ShoppingItemsRepository 
 
     if (error) {
       console.error('Error loading items:', error);
+      throw new Error('Failed to load shopping items');
+    }
+
+    return data || [];
+  }
+
+  async fetchItemsByList(shoppingListId: string): Promise<ShoppingItem[]> {
+    const { data, error } = await supabase
+      .from('shopping_items')
+      .select('*')
+      .eq('shopping_list_id', shoppingListId)
+      .order('completed', { ascending: true })
+      .order('order_index', { ascending: false });
+
+    if (error) {
+      console.error('Error loading items for list:', error);
       throw new Error('Failed to load shopping items');
     }
 
@@ -35,6 +50,7 @@ export class SupabaseShoppingItemsRepository implements ShoppingItemsRepository 
         notes: item.notes?.trim() || null,
         shop_name: item.shop_name?.trim() || null,
         order_index: item.order_index,
+        shopping_list_id: item.shopping_list_id,
         user_id: user.id,
       })
       .select()
