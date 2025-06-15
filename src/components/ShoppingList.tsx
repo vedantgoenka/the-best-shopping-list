@@ -1,19 +1,13 @@
+
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit3, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit3, Check, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from '@/hooks/use-toast';
-
-interface ShoppingItem {
-  id: string;
-  text: string;
-  quantity: number;
-  completed: boolean;
-}
+import { useShoppingItems } from '@/hooks/useShoppingItems';
 
 const ShoppingList = () => {
-  const [items, setItems] = useState<ShoppingItem[]>([]);
+  const { items, loading, addItem, updateItem, deleteItem, refetch } = useShoppingItems();
   const [inputValue, setInputValue] = useState('');
   const [quantityValue, setQuantityValue] = useState('1');
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
@@ -21,45 +15,34 @@ const ShoppingList = () => {
   const [editText, setEditText] = useState('');
   const [editQuantity, setEditQuantity] = useState('1');
 
-  const addItem = () => {
+  const handleAddItem = async () => {
     if (inputValue.trim()) {
-      const newItem: ShoppingItem = {
-        id: Date.now().toString(),
-        text: inputValue.trim(),
-        quantity: parseInt(quantityValue) || 1,
-        completed: false,
-      };
-      setItems([...items, newItem]);
-      setInputValue('');
-      setQuantityValue('1');
-      const quantityText = newItem.quantity === 1 ? '' : `${newItem.quantity}x `;
-      toast({
-        title: "Item added!",
-        description: `"${quantityText}${newItem.text}" was added to your shopping list.`,
-      });
+      const success = await addItem(inputValue.trim(), parseInt(quantityValue) || 1);
+      if (success) {
+        setInputValue('');
+        setQuantityValue('1');
+      }
     }
   };
 
-  const startEdit = (item: ShoppingItem) => {
+  const startEdit = (item: typeof items[0]) => {
     setEditingItem(item.id);
     setEditText(item.text);
     setEditQuantity(item.quantity.toString());
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (editText.trim() && editingItem) {
-      setItems(items.map(item => 
-        item.id === editingItem 
-          ? { ...item, text: editText.trim(), quantity: parseInt(editQuantity) || 1 }
-          : item
-      ));
-      setEditingItem(null);
-      setEditText('');
-      setEditQuantity('1');
-      toast({
-        title: "Item updated!",
-        description: "Your item has been successfully updated.",
+      const success = await updateItem(editingItem, {
+        text: editText.trim(),
+        quantity: parseInt(editQuantity) || 1
       });
+      
+      if (success) {
+        setEditingItem(null);
+        setEditText('');
+        setEditQuantity('1');
+      }
     }
   };
 
@@ -69,27 +52,20 @@ const ShoppingList = () => {
     setEditQuantity('1');
   };
 
-  const toggleItem = (id: string) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, completed: !item.completed } : item
-    ));
+  const toggleItem = async (id: string) => {
+    const item = items.find(item => item.id === id);
+    if (item) {
+      await updateItem(id, { completed: !item.completed });
+    }
   };
 
-  const deleteItem = (id: string) => {
-    const itemToDelete = items.find(item => item.id === id);
-    setItems(items.filter(item => item.id !== id));
-    if (itemToDelete) {
-      const quantityText = itemToDelete.quantity === 1 ? '' : `${itemToDelete.quantity}x `;
-      toast({
-        title: "Item removed",
-        description: `"${quantityText}${itemToDelete.text}" was removed from your list.`,
-      });
-    }
+  const handleDeleteItem = async (id: string) => {
+    await deleteItem(id);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      addItem();
+      handleAddItem();
     }
   };
 
@@ -112,12 +88,36 @@ const ShoppingList = () => {
   const completedCount = items.filter(item => item.completed).length;
   const totalCount = items.length;
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+        <div className="max-w-md mx-auto">
+          <div className="text-center pt-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Shopping List</h1>
+            <p className="text-gray-600">Loading your items...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-8 pt-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Shopping List</h1>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <h1 className="text-3xl font-bold text-gray-800">Shopping List</h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={refetch}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
           <p className="text-gray-600">
             {totalCount === 0 
               ? "Add your first item below" 
@@ -148,7 +148,7 @@ const ShoppingList = () => {
               className="flex-1 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
             />
             <Button 
-              onClick={addItem}
+              onClick={handleAddItem}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-200"
             >
               <Plus className="h-5 w-5" />
@@ -245,7 +245,7 @@ const ShoppingList = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => deleteItem(item.id)}
+                      onClick={() => handleDeleteItem(item.id)}
                       className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors duration-200"
                     >
                       <Trash2 className="h-4 w-4" />
