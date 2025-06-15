@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -103,9 +104,9 @@ const ShoppingList = () => {
           
           <div className="bg-white rounded-xl shadow-lg mb-6 border border-gray-100">
             <div className="p-6 border-b border-gray-100">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <GroupingToggle groupBy={groupBy} onGroupChange={handleGroupChange} />
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                <GroupingToggle groupBy={groupBy} onGroupChange={handleGroupChange} />
+                <div className="flex gap-3 items-center">
                   <Button
                     variant={showCompleted ? "default" : "outline"}
                     size="sm"
