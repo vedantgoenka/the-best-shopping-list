@@ -40,11 +40,17 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
       let addedCount = 0;
       let completedCount = 0;
 
-      // Get the starting order index once and increment for each item
+      // Get the starting order index and ensure items are added in sequence
       let currentOrderIndex = getMaxOrderIndex(items) + 1;
 
-      // Process items in order with manually managed order indices
-      for (const item of parsedItems) {
+      console.log('Starting import with order index:', currentOrderIndex);
+      console.log('Parsed items:', parsedItems);
+
+      // Process items sequentially to maintain order
+      for (let i = 0; i < parsedItems.length; i++) {
+        const item = parsedItems[i];
+        console.log(`Adding item ${i + 1}/${parsedItems.length}:`, item.text, 'at order:', currentOrderIndex);
+        
         const success = await onAddItem(
           item.text, 
           item.quantity, 
@@ -52,8 +58,8 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
           undefined, // notes
           undefined, // shopName
           item.completed, // pass completion status directly
-          true, // maintainOrder=true to add items at the end in order
-          currentOrderIndex // pass the specific order index
+          true, // maintainOrder=true to preserve order
+          currentOrderIndex // specific order index for this item
         );
         
         if (success) {
@@ -61,7 +67,9 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
           if (item.completed) {
             completedCount++;
           }
-          currentOrderIndex++; // increment for next item
+          currentOrderIndex++; // increment for next item to maintain sequence
+        } else {
+          console.log('Failed to add item:', item.text);
         }
       }
       
