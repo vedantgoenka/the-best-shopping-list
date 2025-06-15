@@ -198,10 +198,8 @@ const ShoppingList = () => {
         const reorderedItems = arrayMove(sortedItems, oldIndex, newIndex);
         await reorderItems(reorderedItems);
         
-        // Reset manual reordering flag after a short delay
-        setTimeout(() => {
-          setIsManuallyReordering(false);
-        }, 1000);
+        // Don't reset the flag automatically - let it stay until user changes sort
+        console.log('Reorder completed, keeping manual mode active');
       }
     }
   };
