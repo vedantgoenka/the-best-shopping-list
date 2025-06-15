@@ -4,7 +4,7 @@ import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
 
 interface UseImportItemsProps {
-  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => Promise<boolean>;
+  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean) => Promise<boolean>;
   onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
   items: Array<{ id: string; text: string; quantity: number; category?: string | null }>;
 }
@@ -37,44 +37,22 @@ export const useImportItems = ({ onAddItem, onUpdateItem, items }: UseImportItem
 
       let addedCount = 0;
       let completedCount = 0;
-      const itemsToComplete: string[] = [];
 
-      // First pass: Add all items and collect IDs of items that need to be completed
+      // Process items and pass completion status directly to onAddItem
       for (const item of parsedItems) {
-        const success = await onAddItem(item.text, item.quantity, item.category);
+        const success = await onAddItem(
+          item.text, 
+          item.quantity, 
+          item.category, 
+          undefined, // notes
+          undefined, // shopName
+          item.completed // pass completion status directly
+        );
         
         if (success) {
           addedCount++;
-          
-          // If item should be completed, we'll mark it after all items are added
           if (item.completed) {
-            itemsToComplete.push(`${item.text}|${item.quantity}|${item.category || ''}`);
-          }
-        }
-      }
-
-      // Second pass: Mark items as completed after all items have been added
-      if (itemsToComplete.length > 0) {
-        // Refetch the current items to get the newly added ones
-        // We need to find items that match our criteria and aren't already completed
-        for (const itemKey of itemsToComplete) {
-          const [text, quantity, category] = itemKey.split('|');
-          
-          // Find the most recently added item that matches
-          const matchingItems = items.filter(existingItem => 
-            existingItem.text.toLowerCase() === text.toLowerCase() &&
-            existingItem.quantity === parseInt(quantity) &&
-            (existingItem.category || '') === category
-          );
-          
-          // Get the most recent one (assuming newer items have larger IDs)
-          const itemToComplete = matchingItems.sort((a, b) => b.id.localeCompare(a.id))[0];
-          
-          if (itemToComplete) {
-            const updateSuccess = await onUpdateItem(itemToComplete.id, { completed: true });
-            if (updateSuccess) {
-              completedCount++;
-            }
+            completedCount++;
           }
         }
       }
