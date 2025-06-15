@@ -1,3 +1,5 @@
+
+import { useRef, useEffect, useCallback } from 'react';
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
 import { 
@@ -24,88 +26,13 @@ export const useShoppingItemsCRUD = (
     showCategoryDeleteError,
   } = useShoppingItemsToast();
 
-  const addItem = async (
-    text: string, 
-    quantity: number, 
-    category?: string, 
-    notes?: string, 
-    shopName?: string, 
-    completed?: boolean, 
-    maintainOrder = false,
-    specificOrderIndex?: number
-  ) => {
-    try {
-      // Check for existing item in current state (only among non-deleted items)
-      const existingItem = items.find(item => 
-        item.text.toLowerCase() === text.trim().toLowerCase()
-      );
+  // Use a ref to hold the latest items array to prevent stale state in callbacks.
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
-      if (existingItem) {
-        const updates: any = createItemUpdates(existingItem, quantity, category, notes, shopName);
-        
-        // If we're trying to set completed status and it's different from existing
-        if (completed !== undefined && existingItem.completed !== completed) {
-          updates.completed = completed;
-        }
-
-        // If an order is specified (e.g., during import) and it's different, update it
-        if (specificOrderIndex !== undefined && existingItem.order_index !== specificOrderIndex) {
-          updates.order_index = specificOrderIndex;
-        }
-        
-        if (Object.keys(updates).length > 0) {
-          const success = await updateItem(existingItem.id, updates);
-          if (success) {
-            const updateDetails = getUpdateDetailsMessage(updates);
-            showItemExistsUpdated(existingItem.text, updateDetails);
-          }
-          return success;
-        } else {
-          showItemExists(existingItem.text);
-          return true;
-        }
-      }
-
-      // Item doesn't exist in current state, create new one
-      // Use specific order index if provided, otherwise calculate from current items
-      const orderIndex = specificOrderIndex !== undefined ? specificOrderIndex : (getMaxOrderIndex(items) + 1);
-      
-      const newItem = await shoppingItemsService.createItem({
-        text,
-        quantity: quantity || 1,
-        category,
-        notes,
-        shop_name: shopName,
-        order_index: orderIndex,
-        completed: completed || false, // Set completion status when creating
-      });
-
-      // When maintaining order (e.g., from import), add and re-sort.
-      // Otherwise, add to the beginning.
-      if (maintainOrder) {
-        setItems(prev => {
-          const newItems = [...prev, newItem];
-          return newItems.sort((a, b) => {
-            if (a.completed !== b.completed) {
-              return a.completed ? 1 : -1;
-            }
-            return a.order_index - b.order_index;
-          });
-        });
-      } else {
-        // Default behavior - add to beginning
-        setItems(prev => [newItem, ...prev]);
-      }
-      showItemAdded(newItem);
-      return true;
-    } catch (error) {
-      console.error('Unexpected error adding item:', error);
-      showAddError();
-      return false;
-    }
-  };
-
-  const updateItem = async (id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name' | 'order_index'>>) => {
+  const updateItem = useCallback(async (id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name' | 'order_index'>>) => {
     try {
       await shoppingItemsService.updateItem(id, updates);
 
@@ -114,8 +41,7 @@ export const useShoppingItemsCRUD = (
           item.id === id ? { ...item, ...updates } : item
         );
         
-        // If order_index was part of the update, we need to re-sort the array
-        if ('order_index' in updates) {
+        if ('order_index' in updates || 'completed' in updates) {
           return updatedItems.sort((a, b) => {
             if (a.completed !== b.completed) {
               return a.completed ? 1 : -1;
@@ -134,11 +60,86 @@ export const useShoppingItemsCRUD = (
       showUpdateError();
       return false;
     }
-  };
+  }, [setItems, showItemUpdated, showUpdateError]);
 
-  const deleteItem = async (id: string) => {
+  const addItem = useCallback(async (
+    text: string, 
+    quantity: number, 
+    category?: string, 
+    notes?: string, 
+    shopName?: string, 
+    completed?: boolean, 
+    maintainOrder = false,
+    specificOrderIndex?: number
+  ) => {
     try {
-      const itemToDelete = items.find(item => item.id === id);
+      const currentItems = itemsRef.current;
+      const existingItem = currentItems.find(item => 
+        item.text.toLowerCase() === text.trim().toLowerCase()
+      );
+
+      if (existingItem) {
+        const updates: any = createItemUpdates(existingItem, quantity, category, notes, shopName);
+        
+        if (completed !== undefined && existingItem.completed !== completed) {
+          updates.completed = completed;
+        }
+
+        if (specificOrderIndex !== undefined && existingItem.order_index !== specificOrderIndex) {
+          updates.order_index = specificOrderIndex;
+        }
+        
+        if (Object.keys(updates).length > 0) {
+          const success = await updateItem(existingItem.id, updates);
+          if (success) {
+            const updateDetails = getUpdateDetailsMessage(updates);
+            showItemExistsUpdated(existingItem.text, updateDetails);
+          }
+          return success;
+        } else {
+          showItemExists(existingItem.text);
+          return true;
+        }
+      }
+
+      const orderIndex = specificOrderIndex !== undefined ? specificOrderIndex : (getMaxOrderIndex(currentItems) + 1);
+      
+      const newItem = await shoppingItemsService.createItem({
+        text,
+        quantity: quantity || 1,
+        category,
+        notes,
+        shop_name: shopName,
+        order_index: orderIndex,
+        completed: completed || false,
+      });
+
+      if (maintainOrder) {
+        setItems(prev => {
+          const newItems = [...prev, newItem];
+          return newItems.sort((a, b) => {
+            if (a.completed !== b.completed) {
+              return a.completed ? 1 : -1;
+            }
+            return a.order_index - b.order_index;
+          });
+        });
+      } else {
+        setItems(prev => [newItem, ...prev]);
+      }
+      showItemAdded(newItem);
+      return true;
+    } catch (error) {
+      console.error('Unexpected error adding item:', error);
+      showAddError();
+      return false;
+    }
+  }, [setItems, updateItem, showItemAdded, showItemExists, showItemExistsUpdated, showAddError, showItemUpdated, showUpdateError]);
+
+  const deleteItem = useCallback(async (id: string) => {
+    try {
+      const currentItems = itemsRef.current;
+      const itemToDelete = currentItems.find(item => item.id === id);
       
       await shoppingItemsService.deleteItem(id);
 
@@ -153,11 +154,12 @@ export const useShoppingItemsCRUD = (
       showDeleteError();
       return false;
     }
-  };
+  }, [setItems, showItemDeleted, showDeleteError]);
 
-  const deleteCategoryWithItems = async (categoryName: string) => {
+  const deleteCategoryWithItems = useCallback(async (categoryName: string) => {
     try {
-      const itemsInCategory = items.filter(item => item.category === categoryName);
+      const currentItems = itemsRef.current;
+      const itemsInCategory = currentItems.filter(item => item.category === categoryName);
       
       await shoppingItemsService.deleteItemsByCategory(categoryName);
 
@@ -170,7 +172,7 @@ export const useShoppingItemsCRUD = (
       showCategoryDeleteError();
       return false;
     }
-  };
+  }, [setItems, showCategoryDeleted, showCategoryDeleteError]);
 
   return {
     addItem,
