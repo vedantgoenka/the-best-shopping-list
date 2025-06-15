@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface SearchAndAddItemProps {
   items: Array<{
@@ -26,6 +27,9 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
   searchTerm
 }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [category, setCategory] = useState<string>('');
+  const [shopName, setShopName] = useState<string>('');
+  const [quantity, setQuantity] = useState<number>(1);
 
   // Check if the exact item already exists (case-insensitive)
   const exactItemExists = useMemo(() => {
@@ -35,14 +39,42 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
     );
   }, [items, searchTerm]);
 
+  // Get unique categories and shops from existing items
+  const existingCategories = useMemo(() => {
+    const categories = items
+      .map(item => item.category)
+      .filter((cat): cat is string => cat !== null && cat !== undefined && cat.trim() !== '')
+      .filter((cat, index, arr) => arr.indexOf(cat) === index)
+      .sort();
+    return categories;
+  }, [items]);
+
+  const existingShops = useMemo(() => {
+    const shops = items
+      .map(item => item.shop_name)
+      .filter((shop): shop is string => shop !== null && shop !== undefined && shop.trim() !== '')
+      .filter((shop, index, arr) => arr.indexOf(shop) === index)
+      .sort();
+    return shops;
+  }, [items]);
+
   const handleAddItem = async () => {
     if (!searchTerm.trim()) return;
     
     setIsAdding(true);
-    const success = await onAddItem(searchTerm.trim(), 1);
+    const success = await onAddItem(
+      searchTerm.trim(), 
+      quantity, 
+      category || undefined, 
+      undefined, 
+      shopName || undefined
+    );
     
     if (success) {
       onSearchChange(''); // Clear the search input
+      setCategory(''); // Clear category
+      setShopName(''); // Clear shop
+      setQuantity(1); // Reset quantity
     }
     setIsAdding(false);
   };
@@ -55,6 +87,7 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
   };
 
   const showAddButton = searchTerm.trim() && !exactItemExists;
+  const showExtraFields = showAddButton;
 
   return (
     <div className="bg-white rounded-xl shadow-lg mb-6 border border-gray-100">
@@ -83,6 +116,53 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
             </Button>
           )}
         </div>
+        
+        {showExtraFields && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Category</label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {existingCategories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Shop (optional)</label>
+              <Select value={shopName} onValueChange={setShopName}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select shop" />
+                </SelectTrigger>
+                <SelectContent>
+                  {existingShops.map((shop) => (
+                    <SelectItem key={shop} value={shop}>
+                      {shop}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Quantity</label>
+              <Input
+                type="number"
+                min="1"
+                value={quantity}
+                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                className="w-full"
+              />
+            </div>
+          </div>
+        )}
         
         {searchTerm.trim() && exactItemExists && (
           <div className="mt-3 text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
