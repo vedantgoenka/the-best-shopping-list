@@ -11,25 +11,31 @@ export type Database = {
     Tables: {
       shopping_items: {
         Row: {
+          category: string | null
           completed: boolean
           created_at: string
           id: string
+          notes: string | null
           quantity: number
           text: string
           updated_at: string
         }
         Insert: {
+          category?: string | null
           completed?: boolean
           created_at?: string
           id?: string
+          notes?: string | null
           quantity?: number
           text: string
           updated_at?: string
         }
         Update: {
+          category?: string | null
           completed?: boolean
           created_at?: string
           id?: string
+          notes?: string | null
           quantity?: number
           text?: string
           updated_at?: string

@@ -8,6 +8,8 @@ interface ShoppingItem {
   text: string;
   quantity: number;
   completed: boolean;
+  category?: string | null;
+  notes?: string | null;
 }
 
 export const useShoppingItems = () => {
@@ -50,7 +52,7 @@ export const useShoppingItems = () => {
     }
   };
 
-  const addItem = async (text: string, quantity: number) => {
+  const addItem = async (text: string, quantity: number, category?: string, notes?: string) => {
     try {
       const { data, error } = await supabase
         .from('shopping_items')
@@ -58,6 +60,8 @@ export const useShoppingItems = () => {
           text: text.trim(),
           quantity: quantity || 1,
           completed: false,
+          category: category?.trim() || null,
+          notes: notes?.trim() || null,
         })
         .select()
         .single();
@@ -90,7 +94,7 @@ export const useShoppingItems = () => {
     }
   };
 
-  const updateItem = async (id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed'>>) => {
+  const updateItem = async (id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes'>>) => {
     try {
       const { error } = await supabase
         .from('shopping_items')
@@ -111,7 +115,7 @@ export const useShoppingItems = () => {
         item.id === id ? { ...item, ...updates } : item
       ));
 
-      if (updates.text || updates.quantity) {
+      if (updates.text || updates.quantity || updates.category || updates.notes) {
         toast({
           title: "Item updated!",
           description: "Your item has been successfully updated.",
