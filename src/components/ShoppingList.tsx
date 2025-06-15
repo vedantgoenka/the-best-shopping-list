@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -122,10 +121,11 @@ const ShoppingList = () => {
           </div>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="max-w-full mx-auto space-y-6">
           <SearchAndAddItem
             items={items}
             onAddItem={addItem}
+            onUpdateItem={updateItem}
             onSearchChange={setSearchTerm}
             searchTerm={searchTerm}
           />
@@ -136,7 +136,7 @@ const ShoppingList = () => {
                 <div className="flex-1">
                   <GroupingToggle groupBy={groupBy} onGroupChange={handleGroupChange} />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex justify-end">
                   <Button
                     variant={showCompleted ? "default" : "outline"}
                     size="sm"
@@ -146,11 +146,6 @@ const ShoppingList = () => {
                     <Filter className="h-4 w-4 mr-2" />
                     {showCompleted ? 'Hide' : 'Show'} Completed
                   </Button>
-                  <ImportItemsDialog 
-                    onAddItem={addItem} 
-                    onUpdateItem={updateItem}
-                    items={items}
-                  />
                 </div>
               </div>
             </div>

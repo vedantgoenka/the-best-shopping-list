@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Plus, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import ImportItemsDialog from './ImportItemsDialog';
 
 interface SearchAndAddItemProps {
   items: Array<{
@@ -16,6 +16,7 @@ interface SearchAndAddItemProps {
     shop_name?: string | null;
   }>;
   onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => Promise<boolean>;
+  onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
   onSearchChange: (searchTerm: string) => void;
   searchTerm: string;
 }
@@ -23,6 +24,7 @@ interface SearchAndAddItemProps {
 const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
   items,
   onAddItem,
+  onUpdateItem,
   onSearchChange,
   searchTerm
 }) => {
@@ -116,103 +118,111 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
   const showExtraFields = showAddButton;
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
-      <div className="p-6">
-        <div className="flex gap-3 items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <Input
-              type="text"
-              placeholder="Search for an item or add a new one..."
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="pl-12 pr-4 text-lg h-14 border-gray-200 focus:border-blue-400 focus:ring-blue-400 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm"
+    <div className="w-full">
+      <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4">
+          <div className="flex gap-3 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Input
+                type="text"
+                placeholder="Search for an item or add a new one..."
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="pl-12 pr-4 text-lg h-12 border-gray-200 focus:border-blue-400 focus:ring-blue-400 bg-white rounded-lg"
+              />
+            </div>
+            
+            <ImportItemsDialog 
+              onAddItem={onAddItem} 
+              onUpdateItem={onUpdateItem}
+              items={items}
             />
+            
+            {showAddButton && (
+              <Button
+                onClick={handleAddItem}
+                disabled={isAdding}
+                className="h-12 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold whitespace-nowrap rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                {isAdding ? 'Adding...' : 'Add Item'}
+              </Button>
+            )}
           </div>
           
-          {showAddButton && (
-            <Button
-              onClick={handleAddItem}
-              disabled={isAdding}
-              className="h-14 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold whitespace-nowrap rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              {isAdding ? 'Adding...' : 'Add Item'}
-            </Button>
+          {showExtraFields && (
+            <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Customize your item</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Category</label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Type or select category"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      list="categories"
+                      className="w-full bg-white/80 border-gray-200 rounded-lg"
+                    />
+                    <datalist id="categories">
+                      {existingCategories.map((cat) => (
+                        <option key={cat} value={cat} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Shop</label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Type or select shop"
+                      value={shopName}
+                      onChange={(e) => setShopName(e.target.value)}
+                      list="shops"
+                      className="w-full bg-white/80 border-gray-200 rounded-lg"
+                    />
+                    <datalist id="shops">
+                      {existingShops.map((shop) => (
+                        <option key={shop} value={shop} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Quantity</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={quantityInput}
+                    onChange={handleQuantityChange}
+                    onFocus={handleQuantityFocus}
+                    onBlur={handleQuantityBlur}
+                    className="w-full bg-white/80 border-gray-200 rounded-lg"
+                    placeholder={quantityFocused ? "" : "1"}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {searchTerm.trim() && exactItemExists && (
+            <div className="mt-4 text-sm text-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                <span className="font-medium">"{searchTerm.trim()}"</span> is already in your list
+              </div>
+            </div>
           )}
         </div>
-        
-        {showExtraFields && (
-          <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Customize your item</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Category</label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Type or select category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    list="categories"
-                    className="w-full bg-white/80 border-gray-200 rounded-lg"
-                  />
-                  <datalist id="categories">
-                    {existingCategories.map((cat) => (
-                      <option key={cat} value={cat} />
-                    ))}
-                  </datalist>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Shop</label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Type or select shop"
-                    value={shopName}
-                    onChange={(e) => setShopName(e.target.value)}
-                    list="shops"
-                    className="w-full bg-white/80 border-gray-200 rounded-lg"
-                  />
-                  <datalist id="shops">
-                    {existingShops.map((shop) => (
-                      <option key={shop} value={shop} />
-                    ))}
-                  </datalist>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Quantity</label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={quantityInput}
-                  onChange={handleQuantityChange}
-                  onFocus={handleQuantityFocus}
-                  onBlur={handleQuantityBlur}
-                  className="w-full bg-white/80 border-gray-200 rounded-lg"
-                  placeholder={quantityFocused ? "" : "1"}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {searchTerm.trim() && exactItemExists && (
-          <div className="mt-4 text-sm text-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-              <span className="font-medium">"{searchTerm.trim()}"</span> is already in your list
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
