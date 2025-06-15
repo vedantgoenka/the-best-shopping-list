@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
@@ -174,11 +173,16 @@ const ShoppingList = () => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
-      const newIndex = sortedItems.findIndex((item) => item.id === over.id);
+      const activeItem = sortedItems.find(item => item.id === active.id);
+      const overItem = sortedItems.find(item => item.id === over.id);
+      
+      if (activeItem && overItem) {
+        const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
+        const newIndex = sortedItems.findIndex((item) => item.id === over.id);
 
-      const reorderedItems = arrayMove(sortedItems, oldIndex, newIndex);
-      reorderItems(reorderedItems);
+        const reorderedItems = arrayMove(sortedItems, oldIndex, newIndex);
+        reorderItems(reorderedItems);
+      }
     }
   };
 
@@ -236,7 +240,7 @@ const ShoppingList = () => {
             searchTerm={searchTerm}
           />
           
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border-[0.5px] border-white/30 overflow-hidden">
             <div className="p-2 sm:p-6 border-b border-gray-100 bg-white/50">
               <div className="flex items-center justify-between gap-1 sm:gap-4">
                 <FilterControls
@@ -266,26 +270,26 @@ const ShoppingList = () => {
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
-                  <SortableContext items={sortedItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-3 sm:space-y-8">
-                      {groupedItems.map(group => (
-                        <Collapsible 
-                          key={group.name} 
-                          open={!collapsedGroups.has(group.name)}
-                          onOpenChange={() => toggleGroupCollapse(group.name)}
-                        >
-                          <div className="space-y-2 sm:space-y-4">
-                            <GroupHeader
-                              groupName={group.name}
-                              itemCount={group.items.length}
-                              completedCount={group.completedCount}
-                              totalCount={group.totalCount}
-                              progressPercentage={group.progressPercentage}
-                              isCollapsed={collapsedGroups.has(group.name)}
-                              groupBy={groupBy}
-                              onDeleteCategory={handleDeleteCategory}
-                            />
-                            <CollapsibleContent>
+                  <div className="space-y-3 sm:space-y-8">
+                    {groupedItems.map(group => (
+                      <Collapsible 
+                        key={group.name} 
+                        open={!collapsedGroups.has(group.name)}
+                        onOpenChange={() => toggleGroupCollapse(group.name)}
+                      >
+                        <div className="space-y-2 sm:space-y-4">
+                          <GroupHeader
+                            groupName={group.name}
+                            itemCount={group.items.length}
+                            completedCount={group.completedCount}
+                            totalCount={group.totalCount}
+                            progressPercentage={group.progressPercentage}
+                            isCollapsed={collapsedGroups.has(group.name)}
+                            groupBy={groupBy}
+                            onDeleteCategory={handleDeleteCategory}
+                          />
+                          <CollapsibleContent>
+                            <SortableContext items={group.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
                               <div className="space-y-1 sm:space-y-3">
                                 {group.items.map(item => (
                                   <SortableShoppingItem
@@ -297,12 +301,12 @@ const ShoppingList = () => {
                                   />
                                 ))}
                               </div>
-                            </CollapsibleContent>
-                          </div>
-                        </Collapsible>
-                      ))}
-                    </div>
-                  </SortableContext>
+                            </SortableContext>
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
+                    ))}
+                  </div>
                 </DndContext>
               )}
             </div>
