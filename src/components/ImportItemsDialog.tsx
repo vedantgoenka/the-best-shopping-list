@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Import, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,8 @@ import { toast } from '@/hooks/use-toast';
 
 interface ImportItemsDialogProps {
   onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => Promise<boolean>;
+  onUpdateItem: (id: string, updates: { completed?: boolean }) => Promise<boolean>;
+  items: Array<{ id: string; text: string; quantity: number; category?: string | null }>;
 }
 
 interface ParsedItem {
@@ -18,6 +19,8 @@ interface ParsedItem {
 
 const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
   onAddItem,
+  onUpdateItem,
+  items,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [importText, setImportText] = useState('');
@@ -103,26 +106,41 @@ const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
         return;
       }
 
+      let completedCount = 0;
+      let addedCount = 0;
+
       // Import each item individually
       for (const item of parsedItems) {
         const success = await onAddItem(item.text, item.quantity, item.category);
-        // If the item was successfully added and it should be completed, mark it as completed
-        if (success && item.completed) {
-          // We need to find the item in the list and update it to completed
-          // This will be handled by finding the item and updating it after a brief delay
-          setTimeout(async () => {
-            // This is a workaround - ideally we'd have access to the updateItem function here
-            // For now, the user will need to manually check completed items if needed
-          }, 100);
+        
+        if (success) {
+          addedCount++;
+          
+          // If the item should be completed, find it in the items list and mark it as completed
+          if (item.completed) {
+            // Find the newly added item by matching text, quantity, and category
+            const addedItem = items.find(existingItem => 
+              existingItem.text.toLowerCase() === item.text.toLowerCase() &&
+              existingItem.quantity === item.quantity &&
+              existingItem.category === item.category
+            );
+            
+            if (addedItem) {
+              const updateSuccess = await onUpdateItem(addedItem.id, { completed: true });
+              if (updateSuccess) {
+                completedCount++;
+              }
+            }
+          }
         }
       }
       
-      const completedCount = parsedItems.filter(item => item.completed).length;
       const totalCount = parsedItems.length;
+      const expectedCompletedCount = parsedItems.filter(item => item.completed).length;
       
       toast({
         title: "Items imported successfully!",
-        description: `${totalCount} items have been added to your shopping list.${completedCount > 0 ? ` Note: ${completedCount} items were marked as completed in the import but you may need to check them manually.` : ''}`,
+        description: `${addedCount} items have been added to your shopping list.${completedCount > 0 ? ` ${completedCount} items were automatically marked as completed.` : ''}`,
       });
       
       setImportText('');
