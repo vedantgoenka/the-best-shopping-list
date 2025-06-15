@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
@@ -37,9 +38,13 @@ const ShoppingList = () => {
   });
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
-  // Drag and drop sensors
+  // Drag and drop sensors with better configuration
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -171,11 +176,15 @@ const ShoppingList = () => {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    
+    console.log('Drag end:', { active: active.id, over: over?.id });
 
     if (over && active.id !== over.id) {
       // Find the global indices in the sortedItems array
       const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
       const newIndex = sortedItems.findIndex((item) => item.id === over.id);
+      
+      console.log('Reordering:', { oldIndex, newIndex });
 
       if (oldIndex !== -1 && newIndex !== -1) {
         const reorderedItems = arrayMove(sortedItems, oldIndex, newIndex);

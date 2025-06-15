@@ -51,11 +51,12 @@ const SortableShoppingItem: React.FC<SortableShoppingItemProps> = ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
-      <div className="flex items-center gap-2">
+    <div ref={setNodeRef} style={style} className="relative">
+      <div className="flex items-stretch gap-2">
         <div className="flex-1">
           <ShoppingItem
             item={item}
@@ -64,14 +65,14 @@ const SortableShoppingItem: React.FC<SortableShoppingItemProps> = ({
             items={items}
           />
         </div>
-        <button
+        <div 
           {...attributes}
           {...listeners}
-          className="flex items-center justify-center w-8 h-full text-gray-400 hover:text-gray-600 transition-colors cursor-grab active:cursor-grabbing touch-none"
-          aria-label="Drag to reorder"
+          className="flex items-center justify-center w-10 px-2 text-gray-400 hover:text-gray-600 transition-colors cursor-grab active:cursor-grabbing touch-none bg-gray-50 hover:bg-gray-100 rounded-lg my-1"
+          style={{ minHeight: '60px' }}
         >
           <GripVertical className="h-5 w-5" />
-        </button>
+        </div>
       </div>
     </div>
   );
