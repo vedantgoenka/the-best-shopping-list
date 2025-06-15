@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
 import { getMaxOrderIndex } from '@/utils/shoppingItemUtils';
@@ -13,11 +13,16 @@ interface UseImportItemsProps {
 export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
   const [isImporting, setIsImporting] = useState(false);
   const [importQueue, setImportQueue] = useState<ParsedItem[]>([]);
-  const [startOrderIndex, setStartOrderIndex] = useState(0);
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [processedCount, setProcessedCount] = useState(0);
   const [addedCount, setAddedCount] = useState(0);
   const [completedInBatch, setCompletedInBatch] = useState(0);
+
+  // Use a ref to always get the latest items state
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useEffect(() => {
     // This effect runs when the import is finished.
@@ -40,7 +45,10 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
     }
 
     const itemToProcess = importQueue[0];
-    const specificOrderIndex = startOrderIndex + processedCount;
+    
+    // Calculate the order index based on the CURRENT state of items
+    const currentMaxIndex = getMaxOrderIndex(itemsRef.current);
+    const specificOrderIndex = currentMaxIndex + 1;
 
     const processItem = async () => {
       try {
@@ -71,7 +79,7 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
     };
 
     processItem();
-  }, [isImporting, importQueue, onAddItem, startOrderIndex, processedCount]);
+  }, [isImporting, importQueue, onAddItem, processedCount]);
 
   const importItems = (importText: string) => {
     if (isImporting) {
@@ -102,7 +110,6 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
     setAddedCount(0);
     setCompletedInBatch(0);
     setTotalToProcess(parsed.length);
-    setStartOrderIndex(getMaxOrderIndex(items) + 1);
     setImportQueue(parsed);
     setIsImporting(true);
   };
