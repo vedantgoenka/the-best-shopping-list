@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -95,13 +96,8 @@ const ShoppingList = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Header />
-      <ProgressBanner 
-        totalItems={totalItems}
-        completedItems={completedItems}
-        progressPercentage={progressPercentage}
-      />
       
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-4xl pb-32">
         <div className="max-w-full mx-auto space-y-6">
           <SearchAndAddItem
             items={items}
@@ -197,6 +193,14 @@ const ShoppingList = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 z-50">
+        <ProgressBanner 
+          totalItems={totalItems}
+          completedItems={completedItems}
+          progressPercentage={progressPercentage}
+        />
       </div>
     </div>
   );

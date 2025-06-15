@@ -17,7 +17,7 @@ const ProgressBanner: React.FC<ProgressBannerProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm border-b border-gray-100 sticky top-16 z-10">
+    <div className="bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between py-3">
           <div className="flex-1 mr-4">
@@ -36,9 +36,9 @@ const ProgressBanner: React.FC<ProgressBannerProps> = ({
             className="p-2"
           >
             {isExpanded ? (
-              <ChevronUp className="h-4 w-4 text-gray-600" />
-            ) : (
               <ChevronDown className="h-4 w-4 text-gray-600" />
+            ) : (
+              <ChevronUp className="h-4 w-4 text-gray-600" />
             )}
           </Button>
         </div>
