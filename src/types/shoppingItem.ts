@@ -10,4 +10,5 @@ export interface ShoppingItem {
   order_index: number;
   created_at: string;
   updated_at: string;
+  user_id: string; // Added required user_id field
 }
