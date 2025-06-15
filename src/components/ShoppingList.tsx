@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit3, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,9 +32,10 @@ const ShoppingList = () => {
       setItems([...items, newItem]);
       setInputValue('');
       setQuantityValue('1');
+      const quantityText = newItem.quantity === 1 ? '' : `${newItem.quantity}x `;
       toast({
         title: "Item added!",
-        description: `"${newItem.quantity}x ${newItem.text}" was added to your shopping list.`,
+        description: `"${quantityText}${newItem.text}" was added to your shopping list.`,
       });
     }
   };
@@ -79,9 +79,10 @@ const ShoppingList = () => {
     const itemToDelete = items.find(item => item.id === id);
     setItems(items.filter(item => item.id !== id));
     if (itemToDelete) {
+      const quantityText = itemToDelete.quantity === 1 ? '' : `${itemToDelete.quantity}x `;
       toast({
         title: "Item removed",
-        description: `"${itemToDelete.quantity}x ${itemToDelete.text}" was removed from your list.`,
+        description: `"${quantityText}${itemToDelete.text}" was removed from your list.`,
       });
     }
   };
@@ -228,7 +229,10 @@ const ShoppingList = () => {
                       }`}
                       onClick={() => startEdit(item)}
                     >
-                      <span className="font-medium text-blue-600">{item.quantity}x</span> {item.text}
+                      {item.quantity > 1 && (
+                        <span className="font-medium text-blue-600">{item.quantity}x </span>
+                      )}
+                      {item.text}
                     </div>
                     <Button
                       variant="ghost"
