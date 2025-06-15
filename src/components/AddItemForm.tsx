@@ -1,21 +1,48 @@
 
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 interface AddItemFormProps {
   onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => Promise<boolean>;
+  items: Array<{
+    id: string;
+    text: string;
+    quantity: number;
+    completed: boolean;
+    category?: string | null;
+    notes?: string | null;
+    shop_name?: string | null;
+  }>;
 }
 
-const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem }) => {
+const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem, items }) => {
   const [inputValue, setInputValue] = useState('');
   const [quantityValue, setQuantityValue] = useState('1');
   const [categoryValue, setCategoryValue] = useState('');
   const [notesValue, setNotesValue] = useState('');
   const [shopNameValue, setShopNameValue] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
+
+  // Get unique categories and shops from existing items
+  const existingCategories = Array.from(new Set(
+    items
+      .map(item => item.category)
+      .filter(category => category && category.trim() !== '')
+  )).sort();
+
+  const existingShops = Array.from(new Set(
+    items
+      .map(item => item.shop_name)
+      .filter(shop => shop && shop.trim() !== '')
+  )).sort();
 
   const handleAddItem = async () => {
     if (inputValue.trim()) {
@@ -85,22 +112,124 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem }) => {
 
       {showAdvanced && (
         <div className="space-y-3">
-          <Input
-            type="text"
-            placeholder="Category (e.g., Groceries, Electronics)"
-            value={categoryValue}
-            onChange={(e) => setCategoryValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="border-gray-200 focus:border-blue-400 focus:ring-blue-400"
-          />
-          <Input
-            type="text"
-            placeholder="Shop name (e.g., Walmart, Target)"
-            value={shopNameValue}
-            onChange={(e) => setShopNameValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="border-gray-200 focus:border-blue-400 focus:ring-blue-400"
-          />
+          {/* Category Combobox */}
+          <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={categoryOpen}
+                className="w-full justify-between border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+              >
+                {categoryValue || "Select or add category..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <CommandInput 
+                  placeholder="Search or add category..." 
+                  value={categoryValue}
+                  onValueChange={setCategoryValue}
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    <div className="p-2">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setCategoryOpen(false);
+                        }}
+                      >
+                        Add "{categoryValue}"
+                      </Button>
+                    </div>
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {existingCategories.map((category) => (
+                      <CommandItem
+                        key={category}
+                        value={category}
+                        onSelect={(currentValue) => {
+                          setCategoryValue(currentValue === categoryValue ? "" : currentValue);
+                          setCategoryOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            categoryValue === category ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {category}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          {/* Shop Combobox */}
+          <Popover open={shopOpen} onOpenChange={setShopOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={shopOpen}
+                className="w-full justify-between border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+              >
+                {shopNameValue || "Select or add shop..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <CommandInput 
+                  placeholder="Search or add shop..." 
+                  value={shopNameValue}
+                  onValueChange={setShopNameValue}
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    <div className="p-2">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setShopOpen(false);
+                        }}
+                      >
+                        Add "{shopNameValue}"
+                      </Button>
+                    </div>
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {existingShops.map((shop) => (
+                      <CommandItem
+                        key={shop}
+                        value={shop}
+                        onSelect={(currentValue) => {
+                          setShopNameValue(currentValue === shopNameValue ? "" : currentValue);
+                          setShopOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            shopNameValue === shop ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {shop}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
           <Textarea
             placeholder="Notes (optional)"
             value={notesValue}
