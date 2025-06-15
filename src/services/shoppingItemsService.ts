@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ShoppingItem } from '@/types/shoppingItem';
 
@@ -56,7 +55,7 @@ export const shoppingItemsService = {
     return data;
   },
 
-  async updateItem(id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name'>>) {
+  async updateItem(id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name' | 'order_index'>>) {
     const { error } = await supabase
       .from('shopping_items')
       .update(updates)

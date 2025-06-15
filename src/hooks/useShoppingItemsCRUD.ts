@@ -1,4 +1,3 @@
-
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
 import { 
@@ -42,11 +41,16 @@ export const useShoppingItemsCRUD = (
       );
 
       if (existingItem) {
-        const updates = createItemUpdates(existingItem, quantity, category, notes, shopName);
+        const updates: any = createItemUpdates(existingItem, quantity, category, notes, shopName);
         
         // If we're trying to set completed status and it's different from existing
         if (completed !== undefined && existingItem.completed !== completed) {
           updates.completed = completed;
+        }
+
+        // If an order is specified (e.g., during import) and it's different, update it
+        if (specificOrderIndex !== undefined && existingItem.order_index !== specificOrderIndex) {
+          updates.order_index = specificOrderIndex;
         }
         
         if (Object.keys(updates).length > 0) {
@@ -66,8 +70,6 @@ export const useShoppingItemsCRUD = (
       // Use specific order index if provided, otherwise calculate from current items
       const orderIndex = specificOrderIndex !== undefined ? specificOrderIndex : (getMaxOrderIndex(items) + 1);
       
-      console.log('Creating item with order index:', orderIndex, 'for item:', text);
-      
       const newItem = await shoppingItemsService.createItem({
         text,
         quantity: quantity || 1,
@@ -78,13 +80,18 @@ export const useShoppingItemsCRUD = (
         completed: completed || false, // Set completion status when creating
       });
 
-      // Add item to beginning or end based on maintainOrder flag and specificOrderIndex
-      if (maintainOrder && specificOrderIndex !== undefined) {
-        // When maintaining order with specific index, add to end and let sorting handle it
-        setItems(prev => [...prev, newItem]);
-      } else if (maintainOrder) {
-        // When maintaining order without specific index, add to end
-        setItems(prev => [...prev, newItem]);
+      // When maintaining order (e.g., from import), add and re-sort.
+      // Otherwise, add to the beginning.
+      if (maintainOrder) {
+        setItems(prev => {
+          const newItems = [...prev, newItem];
+          return newItems.sort((a, b) => {
+            if (a.completed !== b.completed) {
+              return a.completed ? 1 : -1;
+            }
+            return a.order_index - b.order_index;
+          });
+        });
       } else {
         // Default behavior - add to beginning
         setItems(prev => [newItem, ...prev]);
@@ -98,13 +105,27 @@ export const useShoppingItemsCRUD = (
     }
   };
 
-  const updateItem = async (id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name'>>) => {
+  const updateItem = async (id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name' | 'order_index'>>) => {
     try {
       await shoppingItemsService.updateItem(id, updates);
 
-      setItems(prev => prev.map(item => 
-        item.id === id ? { ...item, ...updates } : item
-      ));
+      setItems(prev => {
+        const updatedItems = prev.map(item => 
+          item.id === id ? { ...item, ...updates } : item
+        );
+        
+        // If order_index was part of the update, we need to re-sort the array
+        if ('order_index' in updates) {
+          return updatedItems.sort((a, b) => {
+            if (a.completed !== b.completed) {
+              return a.completed ? 1 : -1;
+            }
+            return a.order_index - b.order_index;
+          });
+        }
+        
+        return updatedItems;
+      });
 
       showItemUpdated(updates);
       return true;
