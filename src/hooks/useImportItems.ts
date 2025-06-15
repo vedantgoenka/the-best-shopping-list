@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
 import { getMaxOrderIndex } from '@/utils/shoppingItemUtils';
@@ -10,78 +10,14 @@ interface UseImportItemsProps {
   items: ShoppingItem[];
 }
 
+interface ItemToImport extends ParsedItem {
+  orderIndex: number;
+}
+
 export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
   const [isImporting, setIsImporting] = useState(false);
-  const [importQueue, setImportQueue] = useState<ParsedItem[]>([]);
-  const [totalToProcess, setTotalToProcess] = useState(0);
-  const [processedCount, setProcessedCount] = useState(0);
-  const [addedCount, setAddedCount] = useState(0);
-  const [completedInBatch, setCompletedInBatch] = useState(0);
 
-  // Use a ref to always get the latest items state
-  const itemsRef = useRef(items);
-  useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
-
-  useEffect(() => {
-    // This effect runs when the import is finished.
-    if (isImporting && processedCount > 0 && processedCount === totalToProcess) {
-      const completedMessage = completedInBatch > 0 ? ` ${completedInBatch} items marked as completed.` : '';
-      
-      toast({
-        title: "Import complete!",
-        description: `${addedCount} of ${totalToProcess} items were added to your shopping list.${completedMessage}`,
-      });
-
-      setIsImporting(false);
-    }
-  }, [isImporting, processedCount, totalToProcess, addedCount, completedInBatch]);
-
-  useEffect(() => {
-    // This effect processes one item from the queue at a time.
-    if (!isImporting || importQueue.length === 0) {
-      return;
-    }
-
-    const itemToProcess = importQueue[0];
-    
-    // Calculate the order index based on the CURRENT state of items
-    const currentMaxIndex = getMaxOrderIndex(itemsRef.current);
-    const specificOrderIndex = currentMaxIndex + 1;
-
-    const processItem = async () => {
-      try {
-        const success = await onAddItem(
-          itemToProcess.text,
-          itemToProcess.quantity,
-          itemToProcess.category,
-          undefined, // notes
-          undefined, // shopName
-          itemToProcess.completed,
-          true, // maintainOrder
-          specificOrderIndex
-        );
-
-        if (success) {
-          setAddedCount(prev => prev + 1);
-          if (itemToProcess.completed) {
-            setCompletedInBatch(prev => prev + 1);
-          }
-        }
-      } catch (error) {
-        console.error("Error processing item from import queue:", error);
-      } finally {
-        // Move to the next item regardless of success/failure.
-        setProcessedCount(prev => prev + 1);
-        setImportQueue(prev => prev.slice(1));
-      }
-    };
-
-    processItem();
-  }, [isImporting, importQueue, onAddItem, processedCount]);
-
-  const importItems = (importText: string) => {
+  const importItems = async (importText: string) => {
     if (isImporting) {
       toast({ title: "Import already in progress.", variant: "destructive" });
       return;
@@ -104,14 +40,67 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
       });
       return;
     }
-    
-    // Reset state and kick off the import.
-    setProcessedCount(0);
-    setAddedCount(0);
-    setCompletedInBatch(0);
-    setTotalToProcess(parsed.length);
-    setImportQueue(parsed);
+
     setIsImporting(true);
+
+    try {
+      // Pre-calculate order indices for all items
+      const startOrderIndex = getMaxOrderIndex(items) + 1;
+      const itemsToImport: ItemToImport[] = parsed.map((item, index) => ({
+        ...item,
+        orderIndex: startOrderIndex + index,
+      }));
+
+      console.log(`Starting import of ${itemsToImport.length} items with order indices from ${startOrderIndex}`);
+
+      // Process all items in parallel
+      const results = await Promise.allSettled(
+        itemsToImport.map(item =>
+          onAddItem(
+            item.text,
+            item.quantity,
+            item.category,
+            undefined, // notes
+            undefined, // shopName
+            item.completed,
+            true, // maintainOrder
+            item.orderIndex
+          )
+        )
+      );
+
+      // Count successful additions and completed items
+      let addedCount = 0;
+      let completedInBatch = 0;
+      
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value) {
+          addedCount++;
+          if (itemsToImport[index].completed) {
+            completedInBatch++;
+          }
+        } else if (result.status === 'rejected') {
+          console.error(`Failed to import item ${index}:`, result.reason);
+        }
+      });
+
+      const completedMessage = completedInBatch > 0 ? ` ${completedInBatch} items marked as completed.` : '';
+      
+      toast({
+        title: "Import complete!",
+        description: `${addedCount} of ${itemsToImport.length} items were added to your shopping list.${completedMessage}`,
+      });
+
+    } catch (error) {
+      console.error("Error during import:", error);
+      toast({
+        title: "Import failed",
+        description: "An error occurred while importing items.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   return {
