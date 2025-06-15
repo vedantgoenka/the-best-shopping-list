@@ -2,17 +2,12 @@
 import { useState, useEffect } from 'react';
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
-import { useShoppingItemsToast } from './useShoppingItemsToast';
+import { useShoppingItemsToast } from '@/hooks/useShoppingItemsToast';
 
-export const useShoppingItemsCore = () => {
+export const useShoppingItemsData = () => {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { showLoadError } = useShoppingItemsToast();
-
-  // Load items from Supabase on component mount
-  useEffect(() => {
-    loadItems();
-  }, []);
 
   const loadItems = async () => {
     try {
@@ -26,6 +21,10 @@ export const useShoppingItemsCore = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadItems();
+  }, []);
 
   return {
     items,

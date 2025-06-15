@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
@@ -30,6 +31,7 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
       toast({ title: "Import already in progress.", variant: "destructive" });
       return;
     }
+    
     if (!importText.trim()) {
       toast({
         title: "No items to import",
@@ -52,94 +54,8 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
     setIsImporting(true);
 
     try {
-      // Step 1: Lowercase set of existing item texts (for duplicate detection)
-      const existingTexts = new Set(items.map(item => item.text.trim().toLowerCase()));
-
-      // Step 2: Split parsed items into new and duplicate
-      const uniqueToImport: ParsedItem[] = [];
-      const duplicates: ParsedItem[] = [];
-      parsed.forEach(item => {
-        const normalized = item.text.trim().toLowerCase();
-        if (existingTexts.has(normalized)) {
-          duplicates.push(item);
-        } else {
-          uniqueToImport.push(item);
-        }
-      });
-
-      // Step 3: Calculate order indices to preserve import order with DESC sorting
-      // Since we sort by order_index DESC (highest first), we need:
-      // - First item in import text → highest order_index → appears at top
-      // - Last item in import text → lowest order_index → appears at bottom
-      let baseOrderIndex = getMaxOrderIndex(items) + 1;
-      const itemsToImport: ItemToImport[] = uniqueToImport.map((item, idx) => ({
-        ...item,
-        // First item gets highest index (baseOrderIndex + length-1), last gets lowest (baseOrderIndex)
-        orderIndex: baseOrderIndex + (uniqueToImport.length - 1 - idx),
-      }));
-
-      console.log('Import order indices (DESC sort - higher index = appears first):', 
-        itemsToImport.map(item => ({ text: item.text, orderIndex: item.orderIndex })));
-
-      // Step 4: Sequentially add new items WITH their assigned order indices
-      let addedCount = 0;
-      let completedInBatch = 0;
-      for (const item of itemsToImport) {
-        const success = await onAddItem(
-          item.text,
-          item.quantity,
-          item.category,
-          undefined, // notes
-          undefined, // shopName
-          item.completed,
-          true, // maintainOrder
-          item.orderIndex
-        );
-        if (success) {
-          addedCount++;
-          if (item.completed) completedInBatch++;
-        }
-      }
-
-      // Step 5: For duplicates, update to completed if needed
-      let updatedDuplicates = 0;
-      let completedUpdated = 0;
-      for (const item of duplicates) {
-        if (item.completed) {
-          // Find the matching item's id
-          const match = items.find(
-            i => i.text.trim().toLowerCase() === item.text.trim().toLowerCase()
-          );
-          if (match && !match.completed) {
-            // Only update if not already completed
-            // Assume user's onAddItem handles this as an update
-            const updated = await onAddItem(
-              item.text,
-              match.quantity,
-              item.category || match.category || undefined,
-              match.notes || undefined,
-              match.shop_name || undefined,
-              true, // completed
-              true,
-              match.order_index
-            );
-            if (updated) {
-              updatedDuplicates++;
-              completedUpdated++;
-            }
-          }
-        }
-      }
-      // Feedback message
-      let desc = `${addedCount} of ${parsed.length} items were added to your shopping list.`;
-      if (completedInBatch > 0) desc += ` ${completedInBatch} item${completedInBatch === 1 ? '' : 's'} marked as completed.`;
-      if (updatedDuplicates > 0) desc += ` ${updatedDuplicates} duplicate${updatedDuplicates === 1 ? '' : 's'} updated as completed.`;
-
-      toast({
-        title: "Import complete!",
-        description: desc,
-      });
-
+      const result = await processImportedItems(parsed, items, onAddItem);
+      showImportResults(result, parsed.length);
     } catch (error) {
       console.error("Error during import:", error);
       toast({
@@ -156,4 +72,134 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
     isImporting,
     importItems,
   };
+};
+
+const processImportedItems = async (
+  parsed: ParsedItem[],
+  items: ShoppingItem[],
+  onAddItem: UseImportItemsProps['onAddItem']
+) => {
+  // Split into new and duplicate items
+  const existingTexts = new Set(items.map(item => item.text.trim().toLowerCase()));
+  const { uniqueToImport, duplicates } = splitItemsByExistence(parsed, existingTexts);
+
+  // Assign order indices for correct display order
+  const itemsToImport = assignOrderIndices(uniqueToImport, items);
+
+  // Process new items
+  const newItemsResult = await processNewItems(itemsToImport, onAddItem);
+  
+  // Process duplicates
+  const duplicatesResult = await processDuplicateItems(duplicates, items, onAddItem);
+
+  return {
+    ...newItemsResult,
+    ...duplicatesResult,
+  };
+};
+
+const splitItemsByExistence = (parsed: ParsedItem[], existingTexts: Set<string>) => {
+  const uniqueToImport: ParsedItem[] = [];
+  const duplicates: ParsedItem[] = [];
+  
+  parsed.forEach(item => {
+    const normalized = item.text.trim().toLowerCase();
+    if (existingTexts.has(normalized)) {
+      duplicates.push(item);
+    } else {
+      uniqueToImport.push(item);
+    }
+  });
+
+  return { uniqueToImport, duplicates };
+};
+
+const assignOrderIndices = (uniqueToImport: ParsedItem[], items: ShoppingItem[]): ItemToImport[] => {
+  let baseOrderIndex = getMaxOrderIndex(items) + 1;
+  
+  return uniqueToImport.map((item, idx) => ({
+    ...item,
+    orderIndex: baseOrderIndex + (uniqueToImport.length - 1 - idx),
+  }));
+};
+
+const processNewItems = async (
+  itemsToImport: ItemToImport[],
+  onAddItem: UseImportItemsProps['onAddItem']
+) => {
+  let addedCount = 0;
+  let completedInBatch = 0;
+  
+  for (const item of itemsToImport) {
+    const success = await onAddItem(
+      item.text,
+      item.quantity,
+      item.category,
+      undefined,
+      undefined,
+      item.completed,
+      true,
+      item.orderIndex
+    );
+    
+    if (success) {
+      addedCount++;
+      if (item.completed) completedInBatch++;
+    }
+  }
+
+  return { addedCount, completedInBatch };
+};
+
+const processDuplicateItems = async (
+  duplicates: ParsedItem[],
+  items: ShoppingItem[],
+  onAddItem: UseImportItemsProps['onAddItem']
+) => {
+  let updatedDuplicates = 0;
+  let completedUpdated = 0;
+  
+  for (const item of duplicates) {
+    if (item.completed) {
+      const match = items.find(
+        i => i.text.trim().toLowerCase() === item.text.trim().toLowerCase()
+      );
+      
+      if (match && !match.completed) {
+        const updated = await onAddItem(
+          item.text,
+          match.quantity,
+          item.category || match.category || undefined,
+          match.notes || undefined,
+          match.shop_name || undefined,
+          true,
+          true,
+          match.order_index
+        );
+        
+        if (updated) {
+          updatedDuplicates++;
+          completedUpdated++;
+        }
+      }
+    }
+  }
+
+  return { updatedDuplicates, completedUpdated };
+};
+
+const showImportResults = (
+  result: { addedCount: number; completedInBatch: number; updatedDuplicates: number; completedUpdated: number },
+  totalParsed: number
+) => {
+  const { addedCount, completedInBatch, updatedDuplicates, completedUpdated } = result;
+  
+  let desc = `${addedCount} of ${totalParsed} items were added to your shopping list.`;
+  if (completedInBatch > 0) desc += ` ${completedInBatch} item${completedInBatch === 1 ? '' : 's'} marked as completed.`;
+  if (updatedDuplicates > 0) desc += ` ${updatedDuplicates} duplicate${updatedDuplicates === 1 ? '' : 's'} updated as completed.`;
+
+  toast({
+    title: "Import complete!",
+    description: desc,
+  });
 };

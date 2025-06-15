@@ -1,4 +1,5 @@
-import { useRef, useEffect, useCallback } from 'react';
+
+import { useCallback } from 'react';
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
 import { 
@@ -6,12 +7,25 @@ import {
   createItemUpdates, 
   getUpdateDetailsMessage,
 } from '@/utils/shoppingItemUtils';
-import { useShoppingItemsToast } from './useShoppingItemsToast';
+import { useShoppingItemsToast } from '@/hooks/useShoppingItemsToast';
 
-export const useShoppingItemsCRUD = (
-  items: ShoppingItem[],
-  setItems: React.Dispatch<React.SetStateAction<ShoppingItem[]>>
-) => {
+interface UseShoppingItemOperationsProps {
+  items: ShoppingItem[];
+  itemsRef: React.MutableRefObject<ShoppingItem[]>;
+  addItem: (item: ShoppingItem, maintainOrder?: boolean) => void;
+  updateItem: (id: string, updates: Partial<ShoppingItem>) => void;
+  removeItem: (id: string) => void;
+  removeItemsByCategory: (categoryName: string) => void;
+}
+
+export const useShoppingItemOperations = ({
+  items,
+  itemsRef,
+  addItem,
+  updateItem,
+  removeItem,
+  removeItemsByCategory,
+}: UseShoppingItemOperationsProps) => {
   const {
     showItemAdded,
     showItemUpdated,
@@ -25,33 +39,10 @@ export const useShoppingItemsCRUD = (
     showCategoryDeleteError,
   } = useShoppingItemsToast();
 
-  // Use a ref to hold the latest items array to prevent stale state in callbacks.
-  const itemsRef = useRef(items);
-  useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
-
-  const updateItem = useCallback(async (id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name' | 'order_index'>>) => {
+  const updateItemInDb = useCallback(async (id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name' | 'order_index'>>) => {
     try {
       await shoppingItemsService.updateItem(id, updates);
-
-      setItems(prev => {
-        const updatedItems = prev.map(item => 
-          item.id === id ? { ...item, ...updates } : item
-        );
-        
-        if ('order_index' in updates || 'completed' in updates) {
-          return updatedItems.sort((a, b) => {
-            if (a.completed !== b.completed) {
-              return a.completed ? 1 : -1;
-            }
-            return b.order_index - a.order_index; // Highest order_index first
-          });
-        }
-        
-        return updatedItems;
-      });
-
+      updateItem(id, updates);
       showItemUpdated(updates);
       return true;
     } catch (error) {
@@ -59,9 +50,9 @@ export const useShoppingItemsCRUD = (
       showUpdateError();
       return false;
     }
-  }, [setItems, showItemUpdated, showUpdateError]);
+  }, [updateItem, showItemUpdated, showUpdateError]);
 
-  const addItem = useCallback(async (
+  const addItemToDb = useCallback(async (
     text: string, 
     quantity: number, 
     category?: string, 
@@ -89,7 +80,7 @@ export const useShoppingItemsCRUD = (
         }
         
         if (Object.keys(updates).length > 0) {
-          const success = await updateItem(existingItem.id, updates);
+          const success = await updateItemInDb(existingItem.id, updates);
           if (success) {
             const updateDetails = getUpdateDetailsMessage(updates);
             showItemExistsUpdated(existingItem.text, updateDetails);
@@ -101,7 +92,6 @@ export const useShoppingItemsCRUD = (
         }
       }
 
-      // For new items, add to the bottom with highest order index
       const orderIndex = specificOrderIndex !== undefined ? specificOrderIndex : (getMaxOrderIndex(currentItems) + 1);
       
       const newItem = await shoppingItemsService.createItem({
@@ -114,22 +104,7 @@ export const useShoppingItemsCRUD = (
         completed: completed || false,
       });
 
-      if (maintainOrder) {
-        // When maintaining order (like during import), add and sort properly
-        setItems(prev => {
-          const newItems = [...prev, newItem];
-          return newItems.sort((a, b) => {
-            if (a.completed !== b.completed) {
-              return a.completed ? 1 : -1;
-            }
-            // Sort by order_index descending (highest first) - this ensures newest imports appear at top
-            return b.order_index - a.order_index;
-          });
-        });
-      } else {
-        // Regular add - just add to the top
-        setItems(prev => [newItem, ...prev]);
-      }
+      addItem(newItem, maintainOrder);
       showItemAdded(newItem);
       return true;
     } catch (error) {
@@ -137,16 +112,15 @@ export const useShoppingItemsCRUD = (
       showAddError();
       return false;
     }
-  }, [setItems, updateItem, showItemAdded, showItemExists, showItemExistsUpdated, showAddError, showItemUpdated, showUpdateError]);
+  }, [itemsRef, updateItemInDb, addItem, showItemAdded, showItemExists, showItemExistsUpdated, showAddError]);
 
-  const deleteItem = useCallback(async (id: string) => {
+  const deleteItemFromDb = useCallback(async (id: string) => {
     try {
       const currentItems = itemsRef.current;
       const itemToDelete = currentItems.find(item => item.id === id);
       
       await shoppingItemsService.deleteItem(id);
-
-      setItems(prev => prev.filter(item => item.id !== id));
+      removeItem(id);
       
       if (itemToDelete) {
         showItemDeleted(itemToDelete);
@@ -157,7 +131,7 @@ export const useShoppingItemsCRUD = (
       showDeleteError();
       return false;
     }
-  }, [setItems, showItemDeleted, showDeleteError]);
+  }, [itemsRef, removeItem, showItemDeleted, showDeleteError]);
 
   const deleteCategoryWithItems = useCallback(async (categoryName: string) => {
     try {
@@ -165,8 +139,7 @@ export const useShoppingItemsCRUD = (
       const itemsInCategory = currentItems.filter(item => item.category === categoryName);
       
       await shoppingItemsService.deleteItemsByCategory(categoryName);
-
-      setItems(prev => prev.filter(item => item.category !== categoryName));
+      removeItemsByCategory(categoryName);
       
       showCategoryDeleted(categoryName, itemsInCategory.length);
       return true;
@@ -175,12 +148,12 @@ export const useShoppingItemsCRUD = (
       showCategoryDeleteError();
       return false;
     }
-  }, [setItems, showCategoryDeleted, showCategoryDeleteError]);
+  }, [itemsRef, removeItemsByCategory, showCategoryDeleted, showCategoryDeleteError]);
 
   return {
-    addItem,
-    updateItem,
-    deleteItem,
+    addItem: addItemToDb,
+    updateItem: updateItemInDb,
+    deleteItem: deleteItemFromDb,
     deleteCategoryWithItems,
   };
 };

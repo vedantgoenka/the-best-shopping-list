@@ -1,10 +1,11 @@
+
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
-import { useShoppingItemsToast } from './useShoppingItemsToast';
+import { useShoppingItemsToast } from '@/hooks/useShoppingItemsToast';
 
-export const useShoppingItemsReorder = (
+export const useShoppingItemsReorderLogic = (
   items: ShoppingItem[],
-  setItems: React.Dispatch<React.SetStateAction<ShoppingItem[]>>,
+  updateItems: (updater: (prevItems: ShoppingItem[]) => ShoppingItem[]) => void,
   refetch: () => Promise<void>
 ) => {
   const { showItemsReordered, showReorderError } = useShoppingItemsToast();
@@ -12,14 +13,10 @@ export const useShoppingItemsReorder = (
   const reorderItems = async (reorderedItems: ShoppingItem[]) => {
     try {
       // Update the local state immediately
-      setItems(prevItems => {
-        // Create a new array with the reordered items
+      updateItems(prevItems => {
         const reorderedIds = reorderedItems.map(item => item.id);
-        
-        // Find the position of the first reordered item in the original array
         const firstReorderedIndex = prevItems.findIndex(item => reorderedIds.includes(item.id));
         
-        // Create the new array by replacing the reordered section
         const newItems = [...prevItems];
         let insertIndex = firstReorderedIndex;
         
@@ -35,11 +32,11 @@ export const useShoppingItemsReorder = (
           newItems.splice(insertIndex + index, 0, item);
         });
         
-        // Update order_index for all items - higher index for items at the top
+        // Update order_index for all items
         const totalItems = newItems.length;
         return newItems.map((item, index) => ({ 
           ...item, 
-          order_index: totalItems - 1 - index // Reverse index: first item gets highest order_index
+          order_index: totalItems - 1 - index
         }));
       });
 
@@ -47,20 +44,17 @@ export const useShoppingItemsReorder = (
       const reorderedIds = reorderedItems.map(item => item.id);
       const firstReorderedItemOriginalIndex = items.findIndex(item => reorderedIds.includes(item.id));
       
-      // Calculate new order indices - need to account for descending order
       const totalItems = items.length;
       const updatePromises = reorderedItems.map((item, relativeIndex) => {
         const newArrayPosition = firstReorderedItemOriginalIndex + relativeIndex;
-        const newOrderIndex = totalItems - 1 - newArrayPosition; // Convert position to descending order_index
+        const newOrderIndex = totalItems - 1 - newArrayPosition;
         return shoppingItemsService.updateItemOrder(item.id, newOrderIndex);
       });
       
       await Promise.all(updatePromises);
-
       showItemsReordered();
     } catch (error) {
       console.error('Error reordering items:', error);
-      // Revert the local state by reloading from database
       await refetch();
       showReorderError();
     }
