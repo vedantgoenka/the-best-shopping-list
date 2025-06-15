@@ -1,3 +1,4 @@
+
 import { ShoppingItem } from '@/types/shoppingItem';
 import { shoppingItemsService } from '@/services/shoppingItemsService';
 import { 
@@ -63,7 +64,9 @@ export const useShoppingItemsCRUD = (
 
       // Item doesn't exist in current state, create new one
       // Use specific order index if provided, otherwise calculate from current items
-      const orderIndex = specificOrderIndex ?? (getMaxOrderIndex(items) + 1);
+      const orderIndex = specificOrderIndex !== undefined ? specificOrderIndex : (getMaxOrderIndex(items) + 1);
+      
+      console.log('Creating item with order index:', orderIndex, 'for item:', text);
       
       const newItem = await shoppingItemsService.createItem({
         text,
@@ -75,10 +78,15 @@ export const useShoppingItemsCRUD = (
         completed: completed || false, // Set completion status when creating
       });
 
-      // Add item to beginning or end based on maintainOrder flag
-      if (maintainOrder) {
+      // Add item to beginning or end based on maintainOrder flag and specificOrderIndex
+      if (maintainOrder && specificOrderIndex !== undefined) {
+        // When maintaining order with specific index, add to end and let sorting handle it
+        setItems(prev => [...prev, newItem]);
+      } else if (maintainOrder) {
+        // When maintaining order without specific index, add to end
         setItems(prev => [...prev, newItem]);
       } else {
+        // Default behavior - add to beginning
         setItems(prev => [newItem, ...prev]);
       }
       showItemAdded(newItem);
