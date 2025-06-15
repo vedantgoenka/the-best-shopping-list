@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -100,18 +100,18 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
   const showExtraFields = showAddButton;
 
   return (
-    <div className="bg-white rounded-xl shadow-lg mb-6 border border-gray-100">
+    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
       <div className="p-6">
         <div className="flex gap-3 items-center">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <Input
               type="text"
               placeholder="Search for an item or add a new one..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="pl-12 pr-4 text-base h-12 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+              className="pl-12 pr-4 text-lg h-14 border-gray-200 focus:border-blue-400 focus:ring-blue-400 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm"
             />
           </div>
           
@@ -119,65 +119,74 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
             <Button
               onClick={handleAddItem}
               disabled={isAdding}
-              className="h-12 px-6 bg-green-600 hover:bg-green-700 text-white font-medium whitespace-nowrap"
+              className="h-14 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold whitespace-nowrap rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              {isAdding ? 'Adding...' : `Add "${searchTerm.trim()}"`}
+              <Plus className="h-5 w-5 mr-2" />
+              {isAdding ? 'Adding...' : 'Add Item'}
             </Button>
           )}
         </div>
         
         {showExtraFields && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Category</label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {existingCategories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Customize your item</span>
             </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Shop (optional)</label>
-              <Select value={shopName} onValueChange={setShopName}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select shop" />
-                </SelectTrigger>
-                <SelectContent>
-                  {existingShops.map((shop) => (
-                    <SelectItem key={shop} value={shop}>
-                      {shop}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Quantity</label>
-              <Input
-                type="number"
-                min="1"
-                value={quantityInput}
-                onChange={handleQuantityChange}
-                className="w-full"
-                placeholder="1"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Category</label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="w-full bg-white/80 border-gray-200 rounded-lg">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {existingCategories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Shop</label>
+                <Select value={shopName} onValueChange={setShopName}>
+                  <SelectTrigger className="w-full bg-white/80 border-gray-200 rounded-lg">
+                    <SelectValue placeholder="Select shop" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {existingShops.map((shop) => (
+                      <SelectItem key={shop} value={shop}>
+                        {shop}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Quantity</label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={quantityInput}
+                  onChange={handleQuantityChange}
+                  className="w-full bg-white/80 border-gray-200 rounded-lg"
+                  placeholder="1"
+                />
+              </div>
             </div>
           </div>
         )}
         
         {searchTerm.trim() && exactItemExists && (
-          <div className="mt-3 text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <span className="font-medium">"{searchTerm.trim()}"</span> is already in your list
+          <div className="mt-4 text-sm text-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+              <span className="font-medium">"{searchTerm.trim()}"</span> is already in your list
+            </div>
           </div>
         )}
       </div>
