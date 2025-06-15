@@ -156,7 +156,7 @@ const ShoppingList = () => {
           
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
             <div className="p-6 border-b border-gray-100 bg-white/50">
-              <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
                   <GroupingToggle groupBy={groupBy} onGroupChange={handleGroupChange} />
                 </div>
@@ -165,7 +165,7 @@ const ShoppingList = () => {
                     variant={showCompleted ? "default" : "outline"}
                     size="icon"
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="h-10 w-10"
+                    className="h-14 w-14"
                     title={showCompleted ? 'Hide completed items' : 'Show completed items'}
                   >
                     <Filter className="h-4 w-4" />
@@ -176,7 +176,7 @@ const ShoppingList = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-10 w-10"
+                        className="h-14 w-14"
                         title="Sort options"
                       >
                         <ArrowUpDown className="h-4 w-4" />
