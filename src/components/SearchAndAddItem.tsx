@@ -30,6 +30,7 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
   const [category, setCategory] = useState<string>('');
   const [shopName, setShopName] = useState<string>('');
   const [quantityInput, setQuantityInput] = useState<string>('1');
+  const [quantityFocused, setQuantityFocused] = useState(false);
 
   // Check if the exact item already exists (case-insensitive)
   const exactItemExists = useMemo(() => {
@@ -77,6 +78,7 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
       setCategory(''); // Clear category
       setShopName(''); // Clear shop
       setQuantityInput('1'); // Reset quantity
+      setQuantityFocused(false); // Reset focus state
     }
     setIsAdding(false);
   };
@@ -93,6 +95,42 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
     // Allow empty string for editing, but ensure minimum of 1 when not empty
     if (value === '' || (parseInt(value) > 0)) {
       setQuantityInput(value);
+    }
+  };
+
+  const handleQuantityFocus = () => {
+    setQuantityFocused(true);
+    if (quantityInput === '1') {
+      setQuantityInput('');
+    }
+  };
+
+  const handleQuantityBlur = () => {
+    setQuantityFocused(false);
+    if (quantityInput === '') {
+      setQuantityInput('1');
+    }
+  };
+
+  const handleCategoryChange = (value: string) => {
+    if (value === 'add-new') {
+      const newCategory = prompt('Enter new category name:');
+      if (newCategory && newCategory.trim()) {
+        setCategory(newCategory.trim());
+      }
+    } else {
+      setCategory(value);
+    }
+  };
+
+  const handleShopChange = (value: string) => {
+    if (value === 'add-new') {
+      const newShop = prompt('Enter new shop name:');
+      if (newShop && newShop.trim()) {
+        setShopName(newShop.trim());
+      }
+    } else {
+      setShopName(value);
     }
   };
 
@@ -136,7 +174,7 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Category</label>
-                <Select value={category} onValueChange={setCategory}>
+                <Select value={category} onValueChange={handleCategoryChange}>
                   <SelectTrigger className="w-full bg-white/80 border-gray-200 rounded-lg">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -146,13 +184,16 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
                         {cat}
                       </SelectItem>
                     ))}
+                    <SelectItem value="add-new" className="text-blue-600 font-medium">
+                      + Add new category
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Shop</label>
-                <Select value={shopName} onValueChange={setShopName}>
+                <Select value={shopName} onValueChange={handleShopChange}>
                   <SelectTrigger className="w-full bg-white/80 border-gray-200 rounded-lg">
                     <SelectValue placeholder="Select shop" />
                   </SelectTrigger>
@@ -162,6 +203,9 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
                         {shop}
                       </SelectItem>
                     ))}
+                    <SelectItem value="add-new" className="text-blue-600 font-medium">
+                      + Add new shop
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -173,8 +217,10 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
                   min="1"
                   value={quantityInput}
                   onChange={handleQuantityChange}
+                  onFocus={handleQuantityFocus}
+                  onBlur={handleQuantityBlur}
                   className="w-full bg-white/80 border-gray-200 rounded-lg"
-                  placeholder="1"
+                  placeholder={quantityFocused ? "" : "1"}
                 />
               </div>
             </div>
