@@ -1,9 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { ShoppingBag, Search, Filter } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { ShoppingBag, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useShoppingItems } from '@/hooks/useShoppingItems';
-import AddItemForm from './AddItemForm';
+import SearchAndAddItem from './SearchAndAddItem';
 import ShoppingItem from './ShoppingItem';
 import GroupingToggle from './GroupingToggle';
 import ImportItemsDialog from './ImportItemsDialog';
@@ -95,24 +94,18 @@ const ShoppingList = () => {
         </div>
 
         <div className="max-w-2xl mx-auto">
-          <AddItemForm onAddItem={addItem} items={items} />
+          <SearchAndAddItem
+            items={items}
+            onAddItem={addItem}
+            onSearchChange={setSearchTerm}
+            searchTerm={searchTerm}
+          />
           
           <div className="bg-white rounded-xl shadow-lg mb-6 border border-gray-100">
             <div className="p-6 border-b border-gray-100">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    type="text"
-                    placeholder="Search items, categories, shops..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
-                  />
-                </div>
-                
                 <div className="flex items-center gap-3">
-                  <GroupingToggle currentGroup={groupBy} onGroupChange={handleGroupChange} />
+                  <GroupingToggle groupBy={groupBy} onGroupChange={handleGroupChange} />
                   <Button
                     variant={showCompleted ? "default" : "outline"}
                     size="sm"
@@ -122,7 +115,7 @@ const ShoppingList = () => {
                     <Filter className="h-4 w-4 mr-2" />
                     {showCompleted ? 'Hide' : 'Show'} Completed
                   </Button>
-                  <ImportItemsDialog onImportItems={addItem} />
+                  <ImportItemsDialog onAddItem={addItem} />
                 </div>
               </div>
             </div>
