@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { parseImportText, ParsedItem } from '@/utils/importTextParser';
@@ -69,11 +68,12 @@ export const useImportItems = ({ onAddItem, items }: UseImportItemsProps) => {
       });
 
       // Step 3: Calculate order indices to preserve import order
-      // Start from max + 1 and assign incrementally to preserve import text order
-      let startOrderIndex = getMaxOrderIndex(items) + 1;
+      // Since we sort in descending order (highest first), assign indices in reverse
+      // so the first item in import text gets the highest index and appears first
+      let baseOrderIndex = getMaxOrderIndex(items) + 1;
       const itemsToImport: ItemToImport[] = uniqueToImport.map((item, idx) => ({
         ...item,
-        orderIndex: startOrderIndex + idx,
+        orderIndex: baseOrderIndex + (uniqueToImport.length - 1 - idx), // Reverse assignment
       }));
 
       // Step 4: Sequentially add new items WITH their assigned order indices
