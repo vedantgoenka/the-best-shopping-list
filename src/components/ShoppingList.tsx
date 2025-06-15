@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import ImportItemsDialog from './ImportItemsDialog';
 import DragDropList from './DragDropList';
 import SortableShoppingItem from './SortableShoppingItem';
 import CategoryDeleteDialog from './CategoryDeleteDialog';
+import Header from './Header';
 
 const ShoppingList = () => {
   const { items, loading, addItem, updateItem, deleteItem, deleteCategoryWithItems, reorderItems } = useShoppingItems();
@@ -92,12 +92,10 @@ const ShoppingList = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Header />
+      
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <ShoppingBag className="h-10 w-10 text-blue-600" />
-            <h1 className="text-4xl font-bold text-gray-800">Shopping List</h1>
-          </div>
           <p className="text-gray-600 text-lg">
             {totalItems === 0 ? "Your list is empty" : 
              `${completedItems} of ${totalItems} items completed`}

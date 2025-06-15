@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shopping_items: {
         Row: {
           category: string | null
@@ -21,6 +42,7 @@ export type Database = {
           shop_name: string | null
           text: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           category?: string | null
@@ -33,6 +55,7 @@ export type Database = {
           shop_name?: string | null
           text: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           category?: string | null
@@ -45,6 +68,7 @@ export type Database = {
           shop_name?: string | null
           text?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

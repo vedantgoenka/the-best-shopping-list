@@ -27,6 +27,12 @@ export const shoppingItemsService = {
     order_index: number;
     completed?: boolean;
   }): Promise<ShoppingItem> {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User must be authenticated to create items');
+    }
+
     const { data, error } = await supabase
       .from('shopping_items')
       .insert({
@@ -37,6 +43,7 @@ export const shoppingItemsService = {
         notes: item.notes?.trim() || null,
         shop_name: item.shop_name?.trim() || null,
         order_index: item.order_index,
+        user_id: user.id, // Associate with current user
       })
       .select()
       .single();
