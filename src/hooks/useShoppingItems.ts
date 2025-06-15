@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -12,7 +13,6 @@ interface ShoppingItem {
   shop_name?: string | null;
   created_at: string;
   updated_at: string;
-  order_index?: number | null;
 }
 
 export const useShoppingItems = () => {
@@ -31,7 +31,6 @@ export const useShoppingItems = () => {
         .from('shopping_items')
         .select('*')
         .order('completed', { ascending: true })
-        .order('order_index', { ascending: true, nullsLast: true })
         .order('updated_at', { ascending: false });
 
       if (error) {
@@ -59,29 +58,9 @@ export const useShoppingItems = () => {
 
   const reorderItems = async (reorderedItems: ShoppingItem[]) => {
     try {
-      // Update order_index for all items
-      const updates = reorderedItems.map((item, index) => ({
-        id: item.id,
-        order_index: index
-      }));
-
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('shopping_items')
-          .update({ order_index: update.order_index })
-          .eq('id', update.id);
-
-        if (error) {
-          console.error('Error updating order:', error);
-          throw error;
-        }
-      }
-
-      // Update local state
-      setItems(reorderedItems.map((item, index) => ({
-        ...item,
-        order_index: index
-      })));
+      // For now, just update the local state since we don't have order_index column
+      // In the future, you could add an order_index column to persist the order
+      setItems(reorderedItems);
 
       toast({
         title: "Items reordered",
