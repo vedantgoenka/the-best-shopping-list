@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag, Filter, ArrowUpDown, Grid3X3, Store, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -209,8 +210,8 @@ const ShoppingList = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Header />
       
-      <div className="container mx-auto px-4 py-8 max-w-4xl pb-32">
-        <div className="max-w-full mx-auto space-y-6">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-4xl pb-32">
+        <div className="max-w-full mx-auto space-y-4 sm:space-y-6">
           <SearchAndAddItem
             items={items}
             onAddItem={addItem}
@@ -219,13 +220,13 @@ const ShoppingList = () => {
             searchTerm={searchTerm}
           />
           
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 bg-white/50">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Grid3X3 className="h-4 w-4 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">Category</span>
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border-[0.5px] border-white/40 overflow-hidden">
+            <div className="p-3 sm:p-6 border-b border-gray-100 bg-white/50">
+              <div className="flex items-center justify-between gap-2 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
+                    <span className="text-xs sm:text-sm font-medium text-gray-700">Category</span>
                   </div>
                   
                   <Switch
@@ -234,21 +235,21 @@ const ShoppingList = () => {
                     className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                   />
                   
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">Shop</span>
-                    <Store className="h-4 w-4 text-gray-600" />
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <span className="text-xs sm:text-sm font-medium text-gray-700">Shop</span>
+                    <Store className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-1 sm:gap-2">
                   <Button
                     variant={showCompleted ? "default" : "outline"}
                     size="icon"
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="h-10 w-10"
+                    className="h-8 w-8 sm:h-10 sm:w-10"
                     title={showCompleted ? 'Hide completed items' : 'Show completed items'}
                   >
-                    <Filter className="h-4 w-4" />
+                    <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                   
                   <DropdownMenu>
@@ -256,10 +257,10 @@ const ShoppingList = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-10 w-10"
+                        className="h-8 w-8 sm:h-10 sm:w-10"
                         title="Sort options"
                       >
-                        <ArrowUpDown className="h-4 w-4" />
+                        <ArrowUpDown className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
@@ -284,16 +285,16 @@ const ShoppingList = () => {
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-3 sm:p-6">
               {filteredItems.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="bg-gray-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                    <ShoppingBag className="h-12 w-12 text-gray-300" />
+                <div className="text-center py-8 sm:py-16">
+                  <div className="bg-gray-50 rounded-full w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                    <ShoppingBag className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
                     {searchTerm ? 'No matching items' : 'Your list is empty'}
                   </h3>
-                  <p className="text-gray-500 text-lg mb-6">
+                  <p className="text-gray-500 text-sm sm:text-lg mb-4 sm:mb-6">
                     {searchTerm 
                       ? 'Try adjusting your search terms or clear the filter' 
                       : 'Add your first item to get started with your shopping list'
@@ -310,33 +311,33 @@ const ShoppingList = () => {
                   )}
                 </div>
               ) : (
-                <div className="space-y-8">
+                <div className="space-y-6 sm:space-y-8">
                   {groupedItems.map(group => (
                     <Collapsible 
                       key={group.name} 
                       open={!collapsedGroups.has(group.name)}
                       onOpenChange={() => toggleGroupCollapse(group.name)}
                     >
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div className="flex items-center justify-between">
-                          <CollapsibleTrigger className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
+                          <CollapsibleTrigger className="flex items-center gap-2 sm:gap-3 hover:bg-gray-50 rounded-lg p-1 sm:p-2 -m-1 sm:-m-2 transition-colors">
                             <ChevronDown 
-                              className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                              className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-500 transition-transform duration-200 ${
                                 collapsedGroups.has(group.name) ? '-rotate-90' : ''
                               }`} 
                             />
-                            <h3 className="text-xl font-bold text-gray-800">
+                            <h3 className="text-lg sm:text-xl font-bold text-gray-800">
                               {group.name}
                             </h3>
-                            <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">
+                            <span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
                               {group.items.length}
                             </span>
-                            <div className="flex items-center gap-2 ml-2">
+                            <div className="flex items-center gap-1 sm:gap-2 ml-1 sm:ml-2">
                               <Progress 
                                 value={group.progressPercentage} 
-                                className="w-20 h-2"
+                                className="w-16 sm:w-20 h-2"
                               />
-                              <span className="text-xs text-gray-500 min-w-[3rem]">
+                              <span className="text-xs text-gray-500 min-w-[2.5rem] sm:min-w-[3rem]">
                                 {group.completedCount}/{group.totalCount}
                               </span>
                             </div>
@@ -351,7 +352,7 @@ const ShoppingList = () => {
                         </div>
                         <CollapsibleContent>
                           <DragDropList items={group.items} onReorder={handleReorder}>
-                            <div className="space-y-3">
+                            <div className="space-y-2 sm:space-y-3">
                               {group.items.map(item => (
                                 <SortableShoppingItem
                                   key={item.id}
