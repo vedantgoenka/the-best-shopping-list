@@ -7,7 +7,7 @@ export const shoppingItemsService = {
       .from('shopping_items')
       .select('*')
       .order('completed', { ascending: true })
-      .order('order_index', { ascending: true });
+      .order('order_index', { ascending: false });
 
     if (error) {
       console.error('Error loading items:', error);

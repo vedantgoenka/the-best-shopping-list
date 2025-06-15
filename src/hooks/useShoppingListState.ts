@@ -4,7 +4,7 @@ export const useShoppingListState = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [sortBy, setSortBy] = useState<'manual' | 'name' | 'category' | 'shop' | 'created' | 'completed'>('manual');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [groupBy, setGroupBy] = useState<'category' | 'shop'>(() => {
     return (localStorage.getItem('shoppingListGroupBy') as 'category' | 'shop') || 'category';
   });
@@ -23,7 +23,7 @@ export const useShoppingListState = () => {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(newSortBy);
-      setSortOrder('asc');
+      setSortOrder(newSortBy === 'manual' ? 'desc' : 'asc'); // Default to desc for manual, asc for others
     }
   };
 
