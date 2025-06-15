@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { ShoppingItem } from '@/types/shoppingItem';
@@ -37,26 +38,48 @@ export const useShoppingItems = () => {
 
   const reorderItems = async (reorderedItems: ShoppingItem[]) => {
     try {
-      // Update the local state immediately with new order_index values
+      // Update the local state immediately
       setItems(prevItems => {
-        // Create a map of the reordered items with updated order_index
-        const reorderedMap = new Map(reorderedItems.map((item, index) => [
-          item.id, 
-          { ...item, order_index: index }
-        ]));
+        // Create a new array with the reordered items
+        const itemsMap = new Map(prevItems.map(item => [item.id, item]));
+        const reorderedIds = reorderedItems.map(item => item.id);
         
-        // Update the items array, replacing items that were reordered while keeping others
-        const updatedItems = prevItems.map(item => 
-          reorderedMap.has(item.id) ? reorderedMap.get(item.id)! : item
-        );
+        // Find the position of the first reordered item in the original array
+        const firstReorderedIndex = prevItems.findIndex(item => reorderedIds.includes(item.id));
         
-        return updatedItems;
+        // Create the new array by replacing the reordered section
+        const newItems = [...prevItems];
+        let insertIndex = firstReorderedIndex;
+        
+        // Remove all reordered items from their current positions
+        for (let i = newItems.length - 1; i >= 0; i--) {
+          if (reorderedIds.includes(newItems[i].id)) {
+            newItems.splice(i, 1);
+          }
+        }
+        
+        // Insert reordered items at the correct position
+        reorderedItems.forEach((item, index) => {
+          newItems.splice(insertIndex + index, 0, { ...item, order_index: insertIndex + index });
+        });
+        
+        // Update order_index for all items after the reordered section
+        return newItems.map((item, index) => ({ ...item, order_index: index }));
       });
 
-      // Batch update order_index values in the database
-      const updatePromises = reorderedItems.map((item, index) => 
-        shoppingItemsService.updateItemOrder(item.id, index)
-      );
+      // Calculate the correct order indices based on the current position in the full items array
+      const itemsMap = new Map(items.map(item => [item.id, item]));
+      const reorderedIds = reorderedItems.map(item => item.id);
+      
+      // Find where these items should be positioned
+      const allItemsWithoutReordered = items.filter(item => !reorderedIds.includes(item.id));
+      const firstReorderedItemOriginalIndex = items.findIndex(item => reorderedIds.includes(item.id));
+      
+      // Calculate new order indices
+      const updatePromises = reorderedItems.map((item, relativeIndex) => {
+        const newOrderIndex = firstReorderedItemOriginalIndex + relativeIndex;
+        return shoppingItemsService.updateItemOrder(item.id, newOrderIndex);
+      });
       
       await Promise.all(updatePromises);
 
