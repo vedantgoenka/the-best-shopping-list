@@ -1,19 +1,14 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-
-interface ShoppingItem {
-  id: string;
-  text: string;
-  quantity: number;
-  completed: boolean;
-  category?: string | null;
-  notes?: string | null;
-  shop_name?: string | null;
-  order_index: number;
-  created_at: string;
-  updated_at: string;
-}
+import { ShoppingItem } from '@/types/shoppingItem';
+import { shoppingItemsService } from '@/services/shoppingItemsService';
+import { 
+  findExistingItem, 
+  getMaxOrderIndex, 
+  createItemUpdates, 
+  getUpdateDetailsMessage, 
+  getQuantityText 
+} from '@/utils/shoppingItemUtils';
 
 export const useShoppingItems = () => {
   const [items, setItems] = useState<ShoppingItem[]>([]);
@@ -27,23 +22,8 @@ export const useShoppingItems = () => {
   const loadItems = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('shopping_items')
-        .select('*')
-        .order('completed', { ascending: true })
-        .order('order_index', { ascending: true });
-
-      if (error) {
-        console.error('Error loading items:', error);
-        toast({
-          title: "Error loading items",
-          description: "Failed to load your shopping list from the database.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setItems(data || []);
+      const data = await shoppingItemsService.fetchItems();
+      setItems(data);
     } catch (error) {
       console.error('Unexpected error loading items:', error);
       toast({
@@ -58,23 +38,9 @@ export const useShoppingItems = () => {
 
   const reorderItems = async (reorderedItems: ShoppingItem[]) => {
     try {
-      // Update order_index for each reordered item in the database
-      const updates = reorderedItems.map((item, index) => ({
-        id: item.id,
-        order_index: index,
-      }));
-
       // Batch update order_index values
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('shopping_items')
-          .update({ order_index: update.order_index })
-          .eq('id', update.id);
-
-        if (error) {
-          console.error('Error updating order_index:', error);
-          throw error;
-        }
+      for (const [index, item] of reorderedItems.entries()) {
+        await shoppingItemsService.updateItemOrder(item.id, index);
       }
 
       // Update the local state by merging the reordered items back into the complete array
@@ -109,56 +75,22 @@ export const useShoppingItems = () => {
 
   const addItem = async (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => {
     try {
-      // Check for existing item with the same text (case-insensitive)
-      const existingItem = items.find(item => 
-        item.text.toLowerCase() === text.trim().toLowerCase()
-      );
+      const existingItem = findExistingItem(items, text);
 
       if (existingItem) {
-        // Prepare updates for the existing item
-        const updates: any = {};
+        const updates = createItemUpdates(existingItem, quantity, category, notes, shopName);
         
-        // Update quantity if new quantity is greater than 1 and different from existing
-        if (quantity > 1 && existingItem.quantity !== quantity) {
-          updates.quantity = quantity;
-        }
-        
-        // Update category if provided and different from existing (or if existing has no category)
-        if (category && category.trim() && 
-            (!existingItem.category || existingItem.category !== category.trim())) {
-          updates.category = category.trim();
-        }
-        
-        // Update shop if provided and different from existing (or if existing has no shop)
-        if (shopName && shopName.trim() && 
-            (!existingItem.shop_name || existingItem.shop_name !== shopName.trim())) {
-          updates.shop_name = shopName.trim();
-        }
-        
-        // Update notes if provided and different from existing (or if existing has no notes)
-        if (notes && notes.trim() && 
-            (!existingItem.notes || existingItem.notes !== notes.trim())) {
-          updates.notes = notes.trim();
-        }
-        
-        // If there are updates to make, update the existing item
         if (Object.keys(updates).length > 0) {
           const success = await updateItem(existingItem.id, updates);
           if (success) {
-            const updateDetails = [];
-            if (updates.quantity) updateDetails.push(`quantity to ${updates.quantity}`);
-            if (updates.category) updateDetails.push(`category to "${updates.category}"`);
-            if (updates.shop_name) updateDetails.push(`shop to "${updates.shop_name}"`);
-            if (updates.notes) updateDetails.push('notes');
-            
+            const updateDetails = getUpdateDetailsMessage(updates);
             toast({
               title: "Item updated!",
-              description: `"${existingItem.text}" already exists. Updated ${updateDetails.join(', ')}.`,
+              description: `"${existingItem.text}" already exists. Updated ${updateDetails}.`,
             });
           }
           return success;
         } else {
-          // No updates needed, just notify the user
           toast({
             title: "Item already exists",
             description: `"${existingItem.text}" is already in your list.`,
@@ -167,39 +99,21 @@ export const useShoppingItems = () => {
         }
       }
 
-      // Get the highest order_index to add new item at the top
-      const maxOrderIndex = items.length > 0 ? Math.max(...items.map(item => item.order_index)) : -1;
+      const maxOrderIndex = getMaxOrderIndex(items);
+      const newItem = await shoppingItemsService.createItem({
+        text,
+        quantity: quantity || 1,
+        category,
+        notes,
+        shop_name: shopName,
+        order_index: maxOrderIndex + 1,
+      });
 
-      // If no existing item found, add new item
-      const { data, error } = await supabase
-        .from('shopping_items')
-        .insert({
-          text: text.trim(),
-          quantity: quantity || 1,
-          completed: false,
-          category: category?.trim() || null,
-          notes: notes?.trim() || null,
-          shop_name: shopName?.trim() || null,
-          order_index: maxOrderIndex + 1,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error adding item:', error);
-        toast({
-          title: "Error adding item",
-          description: "Failed to add the item to your shopping list.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      setItems(prev => [data, ...prev]);
-      const quantityText = data.quantity === 1 ? '' : `${data.quantity}x `;
+      setItems(prev => [newItem, ...prev]);
+      const quantityText = getQuantityText(newItem.quantity);
       toast({
         title: "Item added!",
-        description: `"${quantityText}${data.text}" was added to your shopping list.`,
+        description: `"${quantityText}${newItem.text}" was added to your shopping list.`,
       });
       return true;
     } catch (error) {
@@ -215,20 +129,7 @@ export const useShoppingItems = () => {
 
   const updateItem = async (id: string, updates: Partial<Pick<ShoppingItem, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name'>>) => {
     try {
-      const { error } = await supabase
-        .from('shopping_items')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error updating item:', error);
-        toast({
-          title: "Error updating item",
-          description: "Failed to update the item in your shopping list.",
-          variant: "destructive",
-        });
-        return false;
-      }
+      await shoppingItemsService.updateItem(id, updates);
 
       setItems(prev => prev.map(item => 
         item.id === id ? { ...item, ...updates } : item
@@ -256,25 +157,12 @@ export const useShoppingItems = () => {
     try {
       const itemToDelete = items.find(item => item.id === id);
       
-      const { error } = await supabase
-        .from('shopping_items')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error deleting item:', error);
-        toast({
-          title: "Error deleting item",
-          description: "Failed to delete the item from your shopping list.",
-          variant: "destructive",
-        });
-        return false;
-      }
+      await shoppingItemsService.deleteItem(id);
 
       setItems(prev => prev.filter(item => item.id !== id));
       
       if (itemToDelete) {
-        const quantityText = itemToDelete.quantity === 1 ? '' : `${itemToDelete.quantity}x `;
+        const quantityText = getQuantityText(itemToDelete.quantity);
         toast({
           title: "Item removed",
           description: `"${quantityText}${itemToDelete.text}" was removed from your list.`,
