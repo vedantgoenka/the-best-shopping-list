@@ -25,7 +25,7 @@ export const useShoppingItemsCRUD = (
     showCategoryDeleteError,
   } = useShoppingItemsToast();
 
-  const addItem = async (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => {
+  const addItem = async (text: string, quantity: number, category?: string, notes?: string, shopName?: string, completed?: boolean) => {
     try {
       // Check for existing item in current state (only among non-deleted items)
       const existingItem = items.find(item => 
@@ -34,6 +34,11 @@ export const useShoppingItemsCRUD = (
 
       if (existingItem) {
         const updates = createItemUpdates(existingItem, quantity, category, notes, shopName);
+        
+        // If we're trying to set completed status and it's different from existing
+        if (completed !== undefined && existingItem.completed !== completed) {
+          updates.completed = completed;
+        }
         
         if (Object.keys(updates).length > 0) {
           const success = await updateItem(existingItem.id, updates);
@@ -57,6 +62,7 @@ export const useShoppingItemsCRUD = (
         notes,
         shop_name: shopName,
         order_index: maxOrderIndex + 1,
+        completed: completed || false, // Set completion status when creating
       });
 
       setItems(prev => [newItem, ...prev]);

@@ -25,13 +25,14 @@ export const shoppingItemsService = {
     notes?: string | null;
     shop_name?: string | null;
     order_index: number;
+    completed?: boolean;
   }): Promise<ShoppingItem> {
     const { data, error } = await supabase
       .from('shopping_items')
       .insert({
         text: item.text.trim(),
         quantity: item.quantity || 1,
-        completed: false,
+        completed: item.completed || false,
         category: item.category?.trim() || null,
         notes: item.notes?.trim() || null,
         shop_name: item.shop_name?.trim() || null,
