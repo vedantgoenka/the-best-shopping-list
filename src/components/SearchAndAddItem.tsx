@@ -112,28 +112,6 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
     }
   };
 
-  const handleCategoryChange = (value: string) => {
-    if (value === 'add-new') {
-      const newCategory = prompt('Enter new category name:');
-      if (newCategory && newCategory.trim()) {
-        setCategory(newCategory.trim());
-      }
-    } else {
-      setCategory(value);
-    }
-  };
-
-  const handleShopChange = (value: string) => {
-    if (value === 'add-new') {
-      const newShop = prompt('Enter new shop name:');
-      if (newShop && newShop.trim()) {
-        setShopName(newShop.trim());
-      }
-    } else {
-      setShopName(value);
-    }
-  };
-
   const showAddButton = searchTerm.trim() && !exactItemExists;
   const showExtraFields = showAddButton;
 
@@ -174,40 +152,40 @@ const SearchAndAddItem: React.FC<SearchAndAddItemProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Category</label>
-                <Select value={category} onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="w-full bg-white/80 border-gray-200 rounded-lg">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Type or select category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    list="categories"
+                    className="w-full bg-white/80 border-gray-200 rounded-lg"
+                  />
+                  <datalist id="categories">
                     {existingCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
+                      <option key={cat} value={cat} />
                     ))}
-                    <SelectItem value="add-new" className="text-blue-600 font-medium">
-                      + Add new category
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  </datalist>
+                </div>
               </div>
               
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Shop</label>
-                <Select value={shopName} onValueChange={handleShopChange}>
-                  <SelectTrigger className="w-full bg-white/80 border-gray-200 rounded-lg">
-                    <SelectValue placeholder="Select shop" />
-                  </SelectTrigger>
-                  <SelectContent>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Type or select shop"
+                    value={shopName}
+                    onChange={(e) => setShopName(e.target.value)}
+                    list="shops"
+                    className="w-full bg-white/80 border-gray-200 rounded-lg"
+                  />
+                  <datalist id="shops">
                     {existingShops.map((shop) => (
-                      <SelectItem key={shop} value={shop}>
-                        {shop}
-                      </SelectItem>
+                      <option key={shop} value={shop} />
                     ))}
-                    <SelectItem value="add-new" className="text-blue-600 font-medium">
-                      + Add new shop
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  </datalist>
+                </div>
               </div>
               
               <div className="space-y-2">
