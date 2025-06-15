@@ -1,9 +1,9 @@
+
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { useShoppingItems } from '@/hooks/useShoppingItems';
 import SearchAndAddItem from './SearchAndAddItem';
-import DragDropList from './DragDropList';
 import SortableShoppingItem from './SortableShoppingItem';
 import Header from './Header';
 import ProgressBanner from './ProgressBanner';
@@ -11,6 +11,21 @@ import FilterControls from './FilterControls';
 import SortControls from './SortControls';
 import GroupHeader from './GroupHeader';
 import EmptyState from './EmptyState';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 const ShoppingList = () => {
   const { items, loading, addItem, updateItem, deleteItem, deleteCategoryWithItems, reorderItems } = useShoppingItems();
@@ -22,6 +37,14 @@ const ShoppingList = () => {
     return (localStorage.getItem('shoppingListGroupBy') as 'category' | 'shop') || 'category';
   });
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -147,8 +170,16 @@ const ShoppingList = () => {
     localStorage.setItem('shoppingListGroupBy', newGroupBy);
   };
 
-  const handleReorder = (reorderedItems: typeof items) => {
-    reorderItems(reorderedItems);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
+      const newIndex = sortedItems.findIndex((item) => item.id === over.id);
+
+      const reorderedItems = arrayMove(sortedItems, oldIndex, newIndex);
+      reorderItems(reorderedItems);
+    }
   };
 
   const handleDeleteCategory = async (categoryName: string) => {
@@ -195,8 +226,8 @@ const ShoppingList = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Header />
       
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-4xl pb-32">
-        <div className="max-w-full mx-auto space-y-4 sm:space-y-6">
+      <div className="container mx-auto px-1 sm:px-4 py-2 sm:py-8 max-w-4xl pb-32">
+        <div className="max-w-full mx-auto space-y-2 sm:space-y-6">
           <SearchAndAddItem
             items={items}
             onAddItem={addItem}
@@ -205,9 +236,9 @@ const ShoppingList = () => {
             searchTerm={searchTerm}
           />
           
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/40 overflow-hidden">
-            <div className="p-3 sm:p-6 border-b border-gray-100 bg-white/50">
-              <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+            <div className="p-2 sm:p-6 border-b border-gray-100 bg-white/50">
+              <div className="flex items-center justify-between gap-1 sm:gap-4">
                 <FilterControls
                   groupBy={groupBy}
                   showCompleted={showCompleted}
@@ -223,50 +254,56 @@ const ShoppingList = () => {
               </div>
             </div>
 
-            <div className="p-3 sm:p-6">
+            <div className="p-2 sm:p-6">
               {filteredItems.length === 0 ? (
                 <EmptyState
                   searchTerm={searchTerm}
                   onClearSearch={() => setSearchTerm('')}
                 />
               ) : (
-                <div className="space-y-6 sm:space-y-8">
-                  {groupedItems.map(group => (
-                    <Collapsible 
-                      key={group.name} 
-                      open={!collapsedGroups.has(group.name)}
-                      onOpenChange={() => toggleGroupCollapse(group.name)}
-                    >
-                      <div className="space-y-3 sm:space-y-4">
-                        <GroupHeader
-                          groupName={group.name}
-                          itemCount={group.items.length}
-                          completedCount={group.completedCount}
-                          totalCount={group.totalCount}
-                          progressPercentage={group.progressPercentage}
-                          isCollapsed={collapsedGroups.has(group.name)}
-                          groupBy={groupBy}
-                          onDeleteCategory={handleDeleteCategory}
-                        />
-                        <CollapsibleContent>
-                          <DragDropList items={group.items} onReorder={handleReorder}>
-                            <div className="space-y-2 sm:space-y-3">
-                              {group.items.map(item => (
-                                <SortableShoppingItem
-                                  key={item.id}
-                                  item={item}
-                                  onUpdate={updateItem}
-                                  onDelete={deleteItem}
-                                  items={items}
-                                />
-                              ))}
-                            </div>
-                          </DragDropList>
-                        </CollapsibleContent>
-                      </div>
-                    </Collapsible>
-                  ))}
-                </div>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={sortedItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-3 sm:space-y-8">
+                      {groupedItems.map(group => (
+                        <Collapsible 
+                          key={group.name} 
+                          open={!collapsedGroups.has(group.name)}
+                          onOpenChange={() => toggleGroupCollapse(group.name)}
+                        >
+                          <div className="space-y-2 sm:space-y-4">
+                            <GroupHeader
+                              groupName={group.name}
+                              itemCount={group.items.length}
+                              completedCount={group.completedCount}
+                              totalCount={group.totalCount}
+                              progressPercentage={group.progressPercentage}
+                              isCollapsed={collapsedGroups.has(group.name)}
+                              groupBy={groupBy}
+                              onDeleteCategory={handleDeleteCategory}
+                            />
+                            <CollapsibleContent>
+                              <div className="space-y-1 sm:space-y-3">
+                                {group.items.map(item => (
+                                  <SortableShoppingItem
+                                    key={item.id}
+                                    item={item}
+                                    onUpdate={updateItem}
+                                    onDelete={deleteItem}
+                                    items={items}
+                                  />
+                                ))}
+                              </div>
+                            </CollapsibleContent>
+                          </div>
+                        </Collapsible>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
               )}
             </div>
           </div>
