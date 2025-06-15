@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Trash2, Edit3, Check, X, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -55,12 +54,14 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
   
-  // Swipe-to-delete state
+  // Enhanced swipe-to-delete state
   const [swipeX, setSwipeX] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSwiping, setIsSwiping] = useState(false);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-  const swipeThreshold = 100; // Minimum swipe distance to trigger delete
+  const swipeThreshold = 120; // Threshold for auto-delete
+  const maxSwipeDistance = 200; // Maximum swipe distance
 
   // Get unique categories and shops from existing items
   const existingCategories = Array.from(new Set(
@@ -127,17 +128,18 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
     }
   };
 
-  // Swipe handlers
+  // Enhanced swipe handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     if (editingItem) return; // Don't allow swipe when editing
     
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
+    setIsSwiping(true);
     onTouchStart(item.id);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (editingItem) return;
+    if (editingItem || !isSwiping) return;
     
     const touchX = e.touches[0].clientX;
     const touchY = e.touches[0].clientY;
@@ -145,12 +147,13 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
     const deltaY = touchY - touchStartY.current;
     
     // Only respond to horizontal swipes (prevent interference with vertical scrolling)
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
       e.preventDefault();
       
       // Only allow left swipes (negative deltaX)
       if (deltaX < 0) {
-        setSwipeX(Math.max(deltaX, -150)); // Limit maximum swipe distance
+        const clampedSwipe = Math.max(deltaX, -maxSwipeDistance);
+        setSwipeX(clampedSwipe);
       }
     }
   };
@@ -158,41 +161,59 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
   const handleTouchEnd = () => {
     if (editingItem) return;
     
+    setIsSwiping(false);
+    
     // If swiped far enough left, delete the item
     if (swipeX <= -swipeThreshold) {
       handleDeleteItem();
     } else {
-      // Reset position with animation
+      // Reset position with smooth animation
       setSwipeX(0);
     }
     
     onTouchEnd();
   };
 
+  // Calculate delete button opacity and red background intensity
+  const swipeProgress = Math.abs(swipeX) / maxSwipeDistance;
+  const redOpacity = Math.min(swipeProgress * 0.9, 0.9);
+  const deleteButtonScale = Math.min(swipeProgress * 1.2, 1);
+
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border border-gray-100 transition-all duration-300 transform hover:shadow-md overflow-hidden ${
+      className={`relative bg-white rounded-xl shadow-sm border border-gray-100 transition-all duration-300 transform hover:shadow-md overflow-hidden ${
         draggedItem === item.id ? 'scale-95 opacity-75' : 'scale-100 opacity-100'
       } ${item.completed ? 'bg-gray-50' : ''} ${isDeleting ? 'animate-fade-out' : ''}`}
-      style={{
-        transform: `translateX(${swipeX}px)`,
-        transition: swipeX === 0 ? 'transform 0.3s ease-out' : 'none'
-      }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Delete indicator background */}
-      {swipeX < 0 && (
+      {/* Enhanced delete indicator background - iPhone style */}
+      <div
+        className="absolute inset-0 flex items-center justify-end pr-6 z-0 transition-all duration-200 ease-out"
+        style={{
+          background: `linear-gradient(to left, rgba(239, 68, 68, ${redOpacity}) 0%, rgba(239, 68, 68, ${redOpacity * 0.8}) 70%, transparent 100%)`,
+          transform: `translateX(${Math.min(Math.abs(swipeX) * 0.1, 20)}px)`,
+        }}
+      >
         <div
-          className="absolute inset-y-0 right-0 bg-red-500 flex items-center justify-end pr-4 z-0"
-          style={{ width: Math.abs(swipeX) }}
+          className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500 text-white shadow-lg transition-all duration-200"
+          style={{
+            transform: `scale(${deleteButtonScale})`,
+            opacity: swipeProgress > 0.3 ? 1 : swipeProgress * 3,
+          }}
         >
-          <Trash2 className="h-5 w-5 text-white" />
+          <Trash2 className="h-5 w-5" />
         </div>
-      )}
+      </div>
       
-      <div className="relative z-10 bg-white p-4 sm:p-4">
+      <div 
+        className="relative z-10 bg-white p-4 sm:p-4 transition-transform duration-200 ease-out"
+        style={{
+          transform: `translateX(${swipeX}px)`,
+          borderRadius: swipeX < 0 ? '12px 0 0 12px' : '12px',
+        }}
+      >
         {editingItem ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3">
