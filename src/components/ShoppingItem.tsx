@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Trash2, Edit3, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,11 +12,12 @@ interface ShoppingItemData {
   completed: boolean;
   category?: string | null;
   notes?: string | null;
+  shop_name?: string | null;
 }
 
 interface ShoppingItemProps {
   item: ShoppingItemData;
-  onUpdate: (id: string, updates: Partial<Pick<ShoppingItemData, 'text' | 'quantity' | 'completed' | 'category' | 'notes'>>) => Promise<boolean>;
+  onUpdate: (id: string, updates: Partial<Pick<ShoppingItemData, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name'>>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   draggedItem: string | null;
   onTouchStart: (id: string) => void;
@@ -36,12 +36,14 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
   const [editText, setEditText] = useState(item.text);
   const [editQuantity, setEditQuantity] = useState(item.quantity.toString());
   const [editNotes, setEditNotes] = useState(item.notes || '');
+  const [editShopName, setEditShopName] = useState(item.shop_name || '');
 
   const startEdit = () => {
     setEditingItem(true);
     setEditText(item.text);
     setEditQuantity(item.quantity.toString());
     setEditNotes(item.notes || '');
+    setEditShopName(item.shop_name || '');
   };
 
   const saveEdit = async () => {
@@ -49,7 +51,8 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
       const success = await onUpdate(item.id, {
         text: editText.trim(),
         quantity: parseInt(editQuantity) || 1,
-        notes: editNotes.trim() || null
+        notes: editNotes.trim() || null,
+        shop_name: editShopName.trim() || null
       });
       
       if (success) {
@@ -63,6 +66,7 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
     setEditText(item.text);
     setEditQuantity(item.quantity.toString());
     setEditNotes(item.notes || '');
+    setEditShopName(item.shop_name || '');
   };
 
   const toggleItem = async () => {
@@ -128,6 +132,14 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
               <X className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
+          <Input
+            type="text"
+            placeholder="Shop name (optional)"
+            value={editShopName}
+            onChange={(e) => setEditShopName(e.target.value)}
+            onKeyPress={handleEditKeyPress}
+            className="text-xs sm:text-sm h-8 sm:h-10"
+          />
           <Textarea
             placeholder="Notes (optional)"
             value={editNotes}
@@ -174,6 +186,13 @@ const ShoppingItem: React.FC<ShoppingItemProps> = ({
               <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
+          {item.shop_name && (
+            <div className="ml-6 sm:ml-8">
+              <div className="text-xs sm:text-sm text-blue-600 font-medium">
+                🏪 {item.shop_name}
+              </div>
+            </div>
+          )}
           {item.notes && (
             <div className="ml-6 sm:ml-8">
               <div className="text-xs sm:text-sm text-gray-600 italic">

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 interface AddItemFormProps {
-  onAddItem: (text: string, quantity: number, category?: string, notes?: string) => Promise<boolean>;
+  onAddItem: (text: string, quantity: number, category?: string, notes?: string, shopName?: string) => Promise<boolean>;
 }
 
 const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem }) => {
@@ -14,6 +14,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem }) => {
   const [quantityValue, setQuantityValue] = useState('1');
   const [categoryValue, setCategoryValue] = useState('');
   const [notesValue, setNotesValue] = useState('');
+  const [shopNameValue, setShopNameValue] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleAddItem = async () => {
@@ -22,13 +23,15 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem }) => {
         inputValue.trim(), 
         parseInt(quantityValue) || 1,
         categoryValue.trim() || undefined,
-        notesValue.trim() || undefined
+        notesValue.trim() || undefined,
+        shopNameValue.trim() || undefined
       );
       if (success) {
         setInputValue('');
         setQuantityValue('1');
         setCategoryValue('');
         setNotesValue('');
+        setShopNameValue('');
         setShowAdvanced(false);
       }
     }
@@ -76,7 +79,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem }) => {
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
         >
-          {showAdvanced ? 'Hide' : 'Show'} category & notes
+          {showAdvanced ? 'Hide' : 'Show'} category, shop & notes
         </button>
       </div>
 
@@ -87,6 +90,14 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem }) => {
             placeholder="Category (e.g., Groceries, Electronics)"
             value={categoryValue}
             onChange={(e) => setCategoryValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+          />
+          <Input
+            type="text"
+            placeholder="Shop name (e.g., Walmart, Target)"
+            value={shopNameValue}
+            onChange={(e) => setShopNameValue(e.target.value)}
             onKeyPress={handleKeyPress}
             className="border-gray-200 focus:border-blue-400 focus:ring-blue-400"
           />

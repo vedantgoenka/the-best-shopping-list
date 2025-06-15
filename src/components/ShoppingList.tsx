@@ -17,6 +17,7 @@ interface DeletedItem {
   completed: boolean;
   category?: string | null;
   notes?: string | null;
+  shop_name?: string | null;
 }
 
 const ShoppingList = () => {
@@ -55,7 +56,8 @@ const ShoppingList = () => {
       quantity: itemToDelete.quantity,
       completed: itemToDelete.completed,
       category: itemToDelete.category,
-      notes: itemToDelete.notes
+      notes: itemToDelete.notes,
+      shop_name: itemToDelete.shop_name
     });
 
     // Clear any existing timeout
@@ -99,7 +101,8 @@ const ShoppingList = () => {
       recentlyDeleted.text,
       recentlyDeleted.quantity,
       recentlyDeleted.category || undefined,
-      recentlyDeleted.notes || undefined
+      recentlyDeleted.notes || undefined,
+      recentlyDeleted.shop_name || undefined
     );
 
     if (success) {
@@ -165,7 +168,7 @@ const ShoppingList = () => {
 
     // Add all new items
     const addPromises = newItems.map(item => 
-      addItem(item.text, item.quantity, item.category, undefined)
+      addItem(item.text, item.quantity, item.category, undefined, undefined)
     );
     
     // Update existing items with new information
@@ -193,7 +196,8 @@ const ShoppingList = () => {
   const filteredItems = items.filter(item =>
     item.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (item.notes && item.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+    (item.notes && item.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (item.shop_name && item.shop_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const completedCount = filteredItems.filter(item => item.completed).length;
@@ -298,7 +302,7 @@ const ShoppingList = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               type="text"
-              placeholder="Search items, categories, or notes..."
+              placeholder="Search items, categories, shops, or notes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-10 h-10 sm:h-12 text-sm sm:text-base"

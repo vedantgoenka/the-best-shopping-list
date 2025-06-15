@@ -17,6 +17,7 @@ export type Database = {
           id: string
           notes: string | null
           quantity: number
+          shop_name: string | null
           text: string
           updated_at: string
         }
@@ -27,6 +28,7 @@ export type Database = {
           id?: string
           notes?: string | null
           quantity?: number
+          shop_name?: string | null
           text: string
           updated_at?: string
         }
@@ -37,6 +39,7 @@ export type Database = {
           id?: string
           notes?: string | null
           quantity?: number
+          shop_name?: string | null
           text?: string
           updated_at?: string
         }
