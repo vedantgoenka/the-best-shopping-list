@@ -37,25 +37,28 @@ const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
     let currentCategory: string | undefined;
 
     for (const line of lines) {
+      // Remove leading bullets, dashes, asterisks
+      let cleanLine = line.replace(/^[-*•·]\s*/, '').trim();
+      
       // Check if line is a category heading (no checkbox, no quantity, ends with colon or is all caps)
-      if (!line.includes('[') && !line.match(/^\d+x?\s/) && (line.endsWith(':') || line === line.toUpperCase())) {
-        currentCategory = line.replace(':', '').trim();
+      if (!cleanLine.includes('[') && !cleanLine.match(/^\d+x?\s/) && (cleanLine.endsWith(':') || cleanLine === cleanLine.toUpperCase())) {
+        currentCategory = cleanLine.replace(':', '').trim();
         continue;
       }
 
       // Skip empty lines or lines that look like headers
-      if (line.length === 0 || line.match(/^[-=]+$/)) {
+      if (cleanLine.length === 0 || cleanLine.match(/^[-=]+$/)) {
         continue;
       }
 
-      let parsedLine = line;
+      let parsedLine = cleanLine;
       let completed = false;
 
-      // Check for completion status [x] or [X] means completed, [ ] means not completed
-      if (line.includes('[x]') || line.includes('[X]')) {
+      // Check for completion status - [x], [X], or [✓] means completed, [ ] means not completed
+      if (parsedLine.match(/\[x\]/i) || parsedLine.includes('[✓]')) {
         completed = true;
-        parsedLine = parsedLine.replace(/\[x\]/gi, '').trim();
-      } else if (line.includes('[ ]')) {
+        parsedLine = parsedLine.replace(/\[x\]/gi, '').replace(/\[✓\]/g, '').trim();
+      } else if (parsedLine.includes('[ ]')) {
         completed = false;
         parsedLine = parsedLine.replace(/\[ \]/g, '').trim();
       }
