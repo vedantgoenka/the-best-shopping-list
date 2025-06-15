@@ -37,14 +37,9 @@ export const useShoppingItems = () => {
 
   const reorderItems = async (reorderedItems: ShoppingItem[]) => {
     try {
-      // Batch update order_index values
-      for (const [index, item] of reorderedItems.entries()) {
-        await shoppingItemsService.updateItemOrder(item.id, index);
-      }
-
-      // Update the local state by merging the reordered items back into the complete array
+      // Update the local state immediately with new order_index values
       setItems(prevItems => {
-        // Create a map of the reordered items with updated order_index for quick lookup
+        // Create a map of the reordered items with updated order_index
         const reorderedMap = new Map(reorderedItems.map((item, index) => [
           item.id, 
           { ...item, order_index: index }
@@ -58,15 +53,24 @@ export const useShoppingItems = () => {
         return updatedItems;
       });
 
+      // Batch update order_index values in the database
+      const updatePromises = reorderedItems.map((item, index) => 
+        shoppingItemsService.updateItemOrder(item.id, index)
+      );
+      
+      await Promise.all(updatePromises);
+
       toast({
         title: "Items reordered",
         description: "Your shopping list order has been saved.",
       });
     } catch (error) {
       console.error('Error reordering items:', error);
+      // Revert the local state by reloading from database
+      await loadItems();
       toast({
         title: "Error reordering items",
-        description: "Failed to save the item order.",
+        description: "Failed to save the item order. The list has been restored.",
         variant: "destructive",
       });
     }
