@@ -10,6 +10,9 @@ interface ShoppingItem {
   category?: string | null;
   notes?: string | null;
   shop_name?: string | null;
+  created_at: string;
+  updated_at: string;
+  order_index?: number | null;
 }
 
 export const useShoppingItems = () => {
@@ -27,7 +30,9 @@ export const useShoppingItems = () => {
       const { data, error } = await supabase
         .from('shopping_items')
         .select('*')
-        .order('created_at', { ascending: true });
+        .order('completed', { ascending: true })
+        .order('order_index', { ascending: true, nullsLast: true })
+        .order('updated_at', { ascending: false });
 
       if (error) {
         console.error('Error loading items:', error);
@@ -49,6 +54,46 @@ export const useShoppingItems = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const reorderItems = async (reorderedItems: ShoppingItem[]) => {
+    try {
+      // Update order_index for all items
+      const updates = reorderedItems.map((item, index) => ({
+        id: item.id,
+        order_index: index
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('shopping_items')
+          .update({ order_index: update.order_index })
+          .eq('id', update.id);
+
+        if (error) {
+          console.error('Error updating order:', error);
+          throw error;
+        }
+      }
+
+      // Update local state
+      setItems(reorderedItems.map((item, index) => ({
+        ...item,
+        order_index: index
+      })));
+
+      toast({
+        title: "Items reordered",
+        description: "Your shopping list order has been updated.",
+      });
+    } catch (error) {
+      console.error('Error reordering items:', error);
+      toast({
+        title: "Error reordering items",
+        description: "Failed to update the item order.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -136,7 +181,7 @@ export const useShoppingItems = () => {
         return false;
       }
 
-      setItems(prev => [...prev, data]);
+      setItems(prev => [data, ...prev]);
       const quantityText = data.quantity === 1 ? '' : `${data.quantity}x `;
       toast({
         title: "Item added!",
@@ -239,6 +284,7 @@ export const useShoppingItems = () => {
     addItem,
     updateItem,
     deleteItem,
+    reorderItems,
     refetch: loadItems,
   };
 };

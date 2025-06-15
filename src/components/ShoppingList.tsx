@@ -4,12 +4,13 @@ import { ShoppingBag, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useShoppingItems } from '@/hooks/useShoppingItems';
 import SearchAndAddItem from './SearchAndAddItem';
-import ShoppingItem from './ShoppingItem';
 import GroupingToggle from './GroupingToggle';
 import ImportItemsDialog from './ImportItemsDialog';
+import DragDropList from './DragDropList';
+import SortableShoppingItem from './SortableShoppingItem';
 
 const ShoppingList = () => {
-  const { items, loading, addItem, updateItem, deleteItem } = useShoppingItems();
+  const { items, loading, addItem, updateItem, deleteItem, reorderItems } = useShoppingItems();
   const [searchTerm, setSearchTerm] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [groupBy, setGroupBy] = useState<'category' | 'shop'>(() => {
@@ -57,13 +58,17 @@ const ShoppingList = () => {
 
     return sortedGroups.map(groupKey => ({
       name: groupKey,
-      items: groups[groupKey].sort((a, b) => a.text.localeCompare(b.text))
+      items: groups[groupKey]
     }));
   }, [filteredItems, groupBy]);
 
   const handleGroupChange = (newGroupBy: 'category' | 'shop') => {
     setGroupBy(newGroupBy);
     localStorage.setItem('shoppingListGroupBy', newGroupBy);
+  };
+
+  const handleReorder = (reorderedItems: typeof items) => {
+    reorderItems(reorderedItems);
   };
 
   if (loading) {
@@ -147,17 +152,19 @@ const ShoppingList = () => {
                       <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2">
                         {group.name} ({group.items.length})
                       </h3>
-                      <div className="space-y-2">
-                        {group.items.map(item => (
-                          <ShoppingItem
-                            key={item.id}
-                            item={item}
-                            onUpdate={updateItem}
-                            onDelete={deleteItem}
-                            items={items}
-                          />
-                        ))}
-                      </div>
+                      <DragDropList items={group.items} onReorder={handleReorder}>
+                        <div className="space-y-2">
+                          {group.items.map(item => (
+                            <SortableShoppingItem
+                              key={item.id}
+                              item={item}
+                              onUpdate={updateItem}
+                              onDelete={deleteItem}
+                              items={items}
+                            />
+                          ))}
+                        </div>
+                      </DragDropList>
                     </div>
                   ))}
                 </div>
