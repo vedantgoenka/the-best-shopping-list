@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Import, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,11 +36,22 @@ const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
     let currentCategory: string | undefined;
 
     for (const line of lines) {
+      // Check for completion status first (before removing bullets)
+      let completed = false;
+      if (line.match(/\[x\]/i) || line.includes('[✓]')) {
+        completed = true;
+      } else if (line.includes('[ ]')) {
+        completed = false;
+      }
+
       // Remove leading bullets, dashes, asterisks
       let cleanLine = line.replace(/^[-*•·]\s*/, '').trim();
       
+      // Remove checkbox markers after checking completion status
+      cleanLine = cleanLine.replace(/\[x\]/gi, '').replace(/\[✓\]/g, '').replace(/\[ \]/g, '').trim();
+      
       // Check if line is a category heading (no checkbox, no quantity, ends with colon or is all caps)
-      if (!cleanLine.includes('[') && !cleanLine.match(/^\d+x?\s/) && (cleanLine.endsWith(':') || cleanLine === cleanLine.toUpperCase())) {
+      if (!line.includes('[') && !cleanLine.match(/^\d+x?\s/) && (cleanLine.endsWith(':') || cleanLine === cleanLine.toUpperCase())) {
         currentCategory = cleanLine.replace(':', '').trim();
         continue;
       }
@@ -52,16 +62,6 @@ const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
       }
 
       let parsedLine = cleanLine;
-      let completed = false;
-
-      // Check for completion status - [x], [X], or [✓] means completed, [ ] means not completed
-      if (parsedLine.match(/\[x\]/i) || parsedLine.includes('[✓]')) {
-        completed = true;
-        parsedLine = parsedLine.replace(/\[x\]/gi, '').replace(/\[✓\]/g, '').trim();
-      } else if (parsedLine.includes('[ ]')) {
-        completed = false;
-        parsedLine = parsedLine.replace(/\[ \]/g, '').trim();
-      }
 
       // Parse quantity (formats like "2x apples", "3 apples", "2x ", etc.)
       let quantity = 1;
