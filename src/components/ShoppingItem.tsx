@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Trash2, Edit3, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,18 +20,18 @@ interface ShoppingItemProps {
   item: ShoppingItemData;
   onUpdate: (id: string, updates: Partial<Pick<ShoppingItemData, 'text' | 'quantity' | 'completed' | 'category' | 'notes' | 'shop_name'>>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
-  draggedItem: string | null;
-  onTouchStart: (id: string) => void;
-  onTouchEnd: () => void;
+  draggedItem?: string | null;
+  onTouchStart?: (id: string) => void;
+  onTouchEnd?: () => void;
 }
 
 const ShoppingItem: React.FC<ShoppingItemProps> = ({
   item,
   onUpdate,
   onDelete,
-  draggedItem,
-  onTouchStart,
-  onTouchEnd
+  draggedItem = null,
+  onTouchStart = () => {},
+  onTouchEnd = () => {}
 }) => {
   const [editingItem, setEditingItem] = useState(false);
   const [editText, setEditText] = useState(item.text);
