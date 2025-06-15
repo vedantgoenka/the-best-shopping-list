@@ -96,7 +96,7 @@ const ShoppingList = () => {
   const completedCount = items.filter(item => item.completed).length;
   const totalCount = items.length;
 
-  // Group items by category
+  // Group items by category and sort by completion status
   const groupedItems = items.reduce((groups, item) => {
     const category = item.category || 'Uncategorized';
     if (!groups[category]) {
@@ -105,6 +105,14 @@ const ShoppingList = () => {
     groups[category].push(item);
     return groups;
   }, {} as Record<string, typeof items>);
+
+  // Sort items within each category by completion status (incomplete first)
+  Object.keys(groupedItems).forEach(category => {
+    groupedItems[category].sort((a, b) => {
+      if (a.completed === b.completed) return 0;
+      return a.completed ? 1 : -1; // incomplete items first
+    });
+  });
 
   // Sort categories with "Uncategorized" last
   const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
