@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Import, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -116,31 +117,33 @@ const ImportItemsDialog: React.FC<ImportItemsDialogProps> = ({
         if (success) {
           addedCount++;
           
-          // If the item should be completed, find it in the items list and mark it as completed
+          // If the item should be completed, we need to wait a bit and then find it
           if (item.completed) {
-            // Find the newly added item by matching text, quantity, and category
-            const addedItem = items.find(existingItem => 
-              existingItem.text.toLowerCase() === item.text.toLowerCase() &&
-              existingItem.quantity === item.quantity &&
-              existingItem.category === item.category
-            );
-            
-            if (addedItem) {
-              const updateSuccess = await onUpdateItem(addedItem.id, { completed: true });
-              if (updateSuccess) {
-                completedCount++;
+            // Wait a short moment for the state to update
+            setTimeout(async () => {
+              // Get fresh items list - find the most recently added item that matches
+              const addedItem = items
+                .filter(existingItem => 
+                  existingItem.text.toLowerCase() === item.text.toLowerCase() &&
+                  existingItem.quantity === item.quantity &&
+                  existingItem.category === item.category
+                )
+                .sort((a, b) => b.id.localeCompare(a.id))[0]; // Get the most recent one
+              
+              if (addedItem) {
+                const updateSuccess = await onUpdateItem(addedItem.id, { completed: true });
+                if (updateSuccess) {
+                  completedCount++;
+                }
               }
-            }
+            }, 100);
           }
         }
       }
       
-      const totalCount = parsedItems.length;
-      const expectedCompletedCount = parsedItems.filter(item => item.completed).length;
-      
       toast({
         title: "Items imported successfully!",
-        description: `${addedCount} items have been added to your shopping list.${completedCount > 0 ? ` ${completedCount} items were automatically marked as completed.` : ''}`,
+        description: `${addedCount} items have been added to your shopping list.${parsedItems.filter(item => item.completed).length > 0 ? ` Completed items will be marked automatically.` : ''}`,
       });
       
       setImportText('');
