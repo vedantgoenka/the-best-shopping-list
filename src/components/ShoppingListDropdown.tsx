@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, Plus, Edit, Trash2, ShoppingBag } from 'lucide-react';
+import { ChevronDown, Plus, Edit, Trash2, ShoppingBag, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,12 +14,14 @@ import { useShoppingLists } from '@/hooks/useShoppingLists';
 import CreateListDialog from './CreateListDialog';
 import EditListDialog from './EditListDialog';
 import DeleteListDialog from './DeleteListDialog';
+import ManageListsModal from './ManageListsModal';
 
 const ShoppingListDropdown = () => {
   const { lists, currentList, switchToList } = useShoppingLists();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingList, setEditingList] = useState<{ id: string; name: string } | null>(null);
   const [deletingListId, setDeletingListId] = useState<string | null>(null);
+  const [showManageModal, setShowManageModal] = useState(false);
 
   if (!currentList) return null;
 
@@ -34,7 +36,17 @@ const ShoppingListDropdown = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
-          <DropdownMenuLabel>Shopping Lists</DropdownMenuLabel>
+          <DropdownMenuLabel className="flex items-center justify-between">
+            <span>Shopping Lists</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => setShowManageModal(true)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </DropdownMenuLabel>
           <DropdownMenuSeparator />
           
           {lists.map((list) => (
@@ -106,6 +118,11 @@ const ShoppingListDropdown = () => {
           onClose={() => setDeletingListId(null)}
         />
       )}
+
+      <ManageListsModal
+        open={showManageModal}
+        onClose={() => setShowManageModal(false)}
+      />
     </>
   );
 };

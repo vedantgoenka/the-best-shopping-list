@@ -16,11 +16,12 @@ interface DeleteListDialogProps {
   listId: string;
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const DeleteListDialog = ({ listId, open, onClose }: DeleteListDialogProps) => {
+const DeleteListDialog = ({ listId, open, onClose, onSuccess }: DeleteListDialogProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
-  const { deleteList, lists } = useShoppingLists();
+  const { deleteList, lists, refetch } = useShoppingLists();
   
   const listToDelete = lists.find(list => list.id === listId);
 
@@ -28,6 +29,9 @@ const DeleteListDialog = ({ listId, open, onClose }: DeleteListDialogProps) => {
     setIsDeleting(true);
     try {
       await deleteList(listId);
+      // Force a refresh to ensure UI updates
+      await refetch();
+      onSuccess?.();
       onClose();
     } finally {
       setIsDeleting(false);
